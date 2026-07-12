@@ -137,7 +137,9 @@ function download(blob,name){const u=URL.createObjectURL(blob),a=document.create
 async function exportPdf(){document.body.dataset.pdfStatus='start';const blob=new Blob([styledSvg(piecesSvg)],{type:'image/svg+xml;charset=utf-8'}),url=URL.createObjectURL(blob),img=new Image();img.decoding='async';const loaded=new Promise((res,rej)=>{img.onload=res;img.onerror=rej});img.src=url;await loaded;document.body.dataset.pdfStatus='image-loaded';const canvas=document.createElement('canvas');canvas.width=1600;canvas.height=1131;const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);document.body.dataset.pdfStatus='drawn';URL.revokeObjectURL(url);const jpg=binBytes(atob(canvas.toDataURL('image/jpeg',.96).split(',')[1]));const out=pdfBlob(jpg);document.body.dataset.pdfStatus='pdf-'+out.size;download(out,'trimino-'+state.shape+'.pdf')}
 
 document.querySelector('#pdfBtn').onclick=()=>{document.body.dataset.pdfStatus='handler';exportPdf().catch((err)=>{document.body.dataset.pdfStatus='error-'+(err&&err.message?err.message:err);alert('PDF se nepodarilo vytvorit. Zkuste mensi obrazky nebo obnovit stranku.')})};
-renderAll();\nsetTimeout(()=>{openBoard();startGame()},250);\n</script>
+renderAll();
+setTimeout(()=>{openBoard();startGame()},250);
+</script>
 </body>
 </html>
 
