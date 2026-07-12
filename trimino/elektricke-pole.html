@@ -138,7 +138,6 @@ async function exportPdf(){document.body.dataset.pdfStatus='start';const blob=ne
 
 document.querySelector('#pdfBtn').onclick=()=>{document.body.dataset.pdfStatus='handler';exportPdf().catch((err)=>{document.body.dataset.pdfStatus='error-'+(err&&err.message?err.message:err);alert('PDF se nepodarilo vytvorit. Zkuste mensi obrazky nebo obnovit stranku.')})};
 renderAll();
-setTimeout(()=>{openBoard();startGame()},250);
 </script>
 </body>
 </html>
