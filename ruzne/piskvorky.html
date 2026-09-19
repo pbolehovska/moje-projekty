@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="cs">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Piškvorky • Swap1</title>
+<style>
+:root{font-family:system-ui,sans-serif;color:#edf3ff;background:#101827;color-scheme:dark}*{box-sizing:border-box}body{margin:0;padding:24px}main{max-width:1060px;margin:auto}header{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:22px}h1{font-size:30px;margin:0}small,.muted{color:#acbbd1}button,select{font:inherit;border:1px solid #4a5c76;border-radius:9px;background:#25344b;color:#fff;padding:10px 14px}button{cursor:pointer}button:hover{background:#354966}button:focus-visible,select:focus-visible{outline:3px solid #f8c36b;outline-offset:2px}button:disabled{cursor:default;opacity:.5}.layout{display:grid;grid-template-columns:minmax(0,650px) 1fr;gap:24px}.board{display:grid;grid-template-columns:repeat(15,minmax(0,1fr));grid-template-rows:repeat(15,minmax(0,1fr));width:100%;aspect-ratio:1;background:#3b4b65;gap:1px;padding:1px;border-radius:10px;overflow:hidden;touch-action:manipulation}.cell{border:0;border-radius:0;padding:0;background:#19263a;min-width:0;min-height:0;overflow:hidden;display:grid;place-items:center;font-size:clamp(12px,3vw,28px);font-weight:750;line-height:1}.cell:hover{background:#2a3d58}.cell.x{color:#7edbff}.cell.o{color:#ffcb80}.cell.last{box-shadow:inset 0 0 0 2px #8ca2c0}.cell.win{background:#235446}.panel{background:#19263a;border:1px solid #31415a;border-radius:14px;padding:20px;margin-bottom:16px}h2{font-size:18px;margin:0 0 12px}.clockrow{display:flex;justify-content:space-between;gap:10px}.clock{font-variant-numeric:tabular-nums;font-size:30px;font-weight:700}.urgent{color:#ff938e}#status{font-size:20px;font-weight:650;min-height:54px;margin:12px 0}#detail{line-height:1.5;min-height:48px}.choices{display:flex;gap:10px;margin-top:14px}.choices button{flex:1}label{display:block;margin-bottom:8px}select{width:100%;margin-bottom:12px}#newGame{width:100%;background:#1d696c;border-color:#42999c}p,li{line-height:1.55}ul{padding-left:20px;margin-bottom:0}.legend{display:flex;justify-content:space-between;gap:10px;margin-top:12px;font-size:14px}#result{color:#a5f1d1;font-weight:600}footer{margin-top:18px;color:#acbbd1;font-size:13px}[hidden]{display:none!important}@media(max-width:760px){body{padding:12px}.layout{grid-template-columns:1fr;gap:16px}header{margin-bottom:16px}h1{font-size:25px}.panel{padding:16px}.cell{font-size:clamp(13px,4vw,27px)}.sidebar{display:flex;flex-direction:column}.rules{order:3}}
+</style></head>
+<body><main><header><div><small>ČLOVĚK × POČÍTAČ</small><h1>Piškvorky <span class="muted">/ Swap1</span></h1></div><small>15 × 15 · pět v řadě</small></header>
+<div class="layout"><section><div id="board" class="board" role="group" aria-label="Hrací pole 15 krát 15"></div><div class="legend"><span id="humanLabel">Vy: symbol zatím neurčen</span><span id="aiLabel">Počítač: symbol zatím neurčen</span></div><p id="result" role="status"></p></section>
+<aside class="sidebar"><section class="panel"><div class="clockrow"><div><small>ČAS NA TAH</small><div id="turnClock" class="clock">0:15</div></div><div><small>ČAS DUELU</small><div id="duelClock" class="clock">10:00</div></div></div><div id="status" role="status" aria-live="polite"></div><div id="detail" class="muted"></div><div id="choices" class="choices" hidden><button data-symbol="X">Zvolit X</button><button data-symbol="O">Zvolit O</button></div></section>
+<section class="panel"><label for="starter">Kdo zahájí novou hru?</label><select id="starter"><option value="human">Já — položím X, O, X</option><option value="ai">Počítač — já si zvolím symbol</option></select><label for="difficulty">Obtížnost nové hry</label><select id="difficulty" aria-describedby="difficultyHelp"><option value="easy">Nejjednodušší</option><option value="medium" selected>Střední</option><option value="hard">Těžká</option></select><small id="difficultyHelp">Nejjednodušší občas přehlédne hrozbu. Střední vyhrává a blokuje přímé hrozby. Těžká zvažuje i odpověď soupeře. Změna platí po stisknutí Nová hra.</small><p id="activeDifficulty"></p><button id="newGame">Nová hra</button></section>
+<section class="panel rules"><h2>Jak se hraje</h2><ul><li>Zahajující hráč položí postupně <b>X, O, X</b>. Na každý kámen má 15 sekund.</li><li>Druhý hráč si do 15 sekund zvolí symbol. Zbývající symbol získá zahajující.</li><li>Potom hraje symbol s menším počtem kamenů. <b>Při shodě hraje X.</b> Po zahájení tedy pokračuje O.</li><li>Vyhrává alespoň pět vlastních kamenů v řadě, sloupci nebo diagonále. Delší řada také platí.</li><li>Vypršení času na tah či volbu symbolu znamená prohru rozhodujícího hráče. Po 10 minutách nebo zaplnění desky nastává remíza. Při současném vypršení má přednost limit duelu.</li></ul></section></aside></div><footer>Hra funguje offline. Čas běží i při přepnutí na jinou kartu. Nová hra ukončí rozehraný duel.</footer></main>
+<script>
+'use strict';
+const N=15,TURN=15000,DUEL=600000,dirs=[[1,0],[0,1],[1,1],[1,-1]];
+const $=id=>document.getElementById(id), other=s=>s==='X'?'O':'X';
+let board=[],phase='opening',starter='human',human=null,opening=0,turnEnd=0,duelEnd=0,aiTimer=null,gameId=0,last=-1,winning=[];
+let difficulty='medium';
+const difficultyNames={easy:'Nejjednodušší',medium:'Střední',hard:'Těžká'};
+const cells=Array.from({length:N*N},(_,i)=>{const b=document.createElement('button');b.className='cell';b.type='button';b.addEventListener('click',()=>play(i,'human'));$('board').appendChild(b);return b});
+function lineAt(b,i,s){const r=Math.floor(i/N),c=i%N;for(const [dr,dc]of dirs){const line=[i];for(const sign of [-1,1]){let rr=r+sign*dr,cc=c+sign*dc;while(rr>=0&&rr<N&&cc>=0&&cc<N&&b[rr*N+cc]===s){line.push(rr*N+cc);rr+=sign*dr;cc+=sign*dc}}if(line.length>=5)return line}return []}
+function nextSymbol(){const x=board.filter(s=>s==='X').length,o=board.filter(s=>s==='O').length;return x<=o?'X':'O'}
+function symbol(){return phase==='opening'?['X','O','X'][opening]:nextSymbol()}
+function actor(){return phase==='opening'?starter:phase==='choice'?(starter==='human'?'ai':'human'):(symbol()===human?'human':'ai')}
+function candidates(b){const filled=b.map((s,i)=>s?i:-1).filter(i=>i>=0);if(!filled.length)return [112];const set=new Set();for(const i of filled){const r=Math.floor(i/N),c=i%N;for(let dr=-2;dr<=2;dr++)for(let dc=-2;dc<=2;dc++){const rr=r+dr,cc=c+dc;if(rr>=0&&rr<N&&cc>=0&&cc<N&&!b[rr*N+cc])set.add(rr*N+cc)}}return [...set].sort((a,b)=>a-b)}
+function position(b,i,s){let score=0;const r=Math.floor(i/N),c=i%N;for(const [dr,dc]of dirs){let count=1,open=0;for(const sign of [-1,1]){let rr=r+dr*sign,cc=c+dc*sign;while(rr>=0&&rr<N&&cc>=0&&cc<N&&b[rr*N+cc]===s){count++;rr+=dr*sign;cc+=dc*sign}if(rr>=0&&rr<N&&cc>=0&&cc<N&&!b[rr*N+cc])open++}score+=count>=5?1000000:open===0?0:([0,2,25,300,6000][count]||0)*(open===2?4:1)}return score+(14-Math.abs(r-7)-Math.abs(c-7))*.3}
+function bestMove(b,s){const options=candidates(b);if(!options.length)return -1;for(const mark of [s,other(s)])for(const i of options){b[i]=mark;const win=lineAt(b,i,mark).length;b[i]=null;if(win)return i}let best=options[0],value=-Infinity;for(const i of options){const v=position(b,i,s)+position(b,i,other(s))*1.15;if(v>value){value=v;best=i}}return best}
+function winningMove(b,s,options=candidates(b)){for(const i of options){b[i]=s;const wins=lineAt(b,i,s).length;b[i]=null;if(wins)return i}return -1}
+function rankedMoves(b,s){return candidates(b).map(i=>({i,value:position(b,i,s)+1.15*position(b,i,other(s))})).sort((a,b)=>b.value-a.value||a.i-b.i)}
+function evaluate(b,s){const options=candidates(b);let own=0,opp=0;for(const i of options){own=Math.max(own,position(b,i,s));opp=Math.max(opp,position(b,i,other(s)))}return own-1.1*opp}
+function computerMove(b,s,level=difficulty,random=Math.random){
+ if(level==='medium')return bestMove(b,s);
+ const options=candidates(b);if(!options.length)return -1;
+ const win=winningMove(b,s,options);if(win>=0)return win;
+ const block=winningMove(b,other(s),options);
+ if(level==='easy'){
+  if(block>=0&&random()<.45)return block;
+  const pool=rankedMoves(b,s).slice(0,8);return pool[Math.floor(random()*pool.length)].i;
+ }
+ if(block>=0)return block;
+ // Bounded two-ply minimax: examine our move and the opponent's strongest replies.
+ const deadline=performance.now()+200,choices=rankedMoves(b,s).slice(0,12);
+ let best=choices[0].i,bestValue=-Infinity;
+ for(const {i,value} of choices){
+  b[i]=s;let worst=Infinity;
+  const replies=rankedMoves(b,other(s)).slice(0,8);
+  for(const {i:j} of replies){b[j]=other(s);const v=lineAt(b,j,other(s)).length?-100000000:evaluate(b,s);b[j]=null;worst=Math.min(worst,v)}
+  if(!replies.length)worst=0;
+  b[i]=null;const score=worst+value*.01;
+  if(score>bestValue){bestValue=score;best=i}
+  if(performance.now()>=deadline)break;
+ }
+ return best;
+}
+function chooseAI(){// Compare each color's best available threats; O gets the next move.
+const options=candidates(board),potential=s=>options.map(i=>position(board,i,s)).sort((a,b)=>b-a).slice(0,3).reduce((a,b)=>a+b,0);return potential('X')>potential('O')*1.2+20?'X':'O'}
+function end(text,line=[]){phase='ended';winning=line;clearTimeout(aiTimer);$('result').textContent=text;render()}
+function expired(now=performance.now()){if(phase==='ended')return true;if(now>=duelEnd){end('Remíza — vypršel desetiminutový limit duelu.');return true}if(now>=turnEnd){end(actor()==='human'?'Prohráli jste — vypršel váš čas.':'Vyhráli jste — počítači vypršel čas.');return true}return false}
+function play(i,who){if(expired()||phase==='choice'||actor()!==who||board[i])return;const s=symbol();board[i]=s;last=i;if(phase==='opening'){opening++;if(opening===3)phase='choice'}else{const line=lineAt(board,i,s);if(line.length){end(s===human?'Vyhráli jste! Pět v řadě.':'Počítač vyhrál. Zkuste odvetu!',line);return}if(board.every(Boolean)){end('Remíza — hrací pole je plné.');return}}beginTurn()}
+function choose(s,who){if(expired()||phase!=='choice'||actor()!==who)return;human=who==='human'?s:other(s);phase='normal';beginTurn()}
+function beginTurn(){turnEnd=performance.now()+TURN;render();clearTimeout(aiTimer);const id=gameId;if(actor()==='ai')aiTimer=setTimeout(()=>{if(id!==gameId||expired())return;if(phase==='choice')choose(chooseAI(),'ai');else play(computerMove(board,symbol()),'ai')},450)}
+function time(ms){const secs=Math.max(0,Math.ceil(ms/1000));return Math.floor(secs/60)+':'+String(secs%60).padStart(2,'0')}
+function clocks(){const now=performance.now();$('turnClock').textContent=time(turnEnd-now);$('duelClock').textContent=time(duelEnd-now);$('turnClock').classList.toggle('urgent',turnEnd-now<=5000)}
+function render(){for(let i=0;i<cells.length;i++){const b=cells[i];b.textContent=board[i]||'';b.className='cell'+(board[i]?' '+board[i].toLowerCase():'')+(i===last?' last':'')+(winning.includes(i)?' win':'');b.setAttribute('aria-label',`Řádek ${Math.floor(i/N)+1}, sloupec ${i%N+1}: ${board[i]||'prázdné'}`);b.setAttribute('aria-disabled',String(phase==='ended'||phase==='choice'||actor()!=='human'||!!board[i]))}
+$('humanLabel').textContent=human?'Vy: '+human:'Vy: symbol zatím neurčen';$('aiLabel').textContent=human?'Počítač: '+other(human):'Počítač: symbol zatím neurčen';$('choices').hidden=!(phase==='choice'&&actor()==='human');
+if(phase==='ended'){$('status').textContent='Duel skončil';$('detail').textContent='Pro další duel stiskněte Nová hra.'}else{const name=actor()==='human'?'Vy':'Počítač';$('status').textContent=phase==='choice'?name+' vybíráte symbol'.replace('vybíráte',actor()==='human'?'vybíráte':'vybírá'):name+' '+(actor()==='human'?'hrajete':'hraje')+' '+symbol();$('detail').textContent=phase==='opening'?`Swap1 · úvodní kámen ${opening+1} ze 3. Všechny tři kameny pokládá zahajující hráč.`:phase==='choice'?'Swap1 · zvolte X nebo O. Na výběr je 15 sekund. Poté hraje O.':'Hraje symbol s menším počtem kamenů; při shodě X.'}clocks()}
+function newGame(){clearTimeout(aiTimer);gameId++;board=Array(N*N).fill(null);phase='opening';starter=$('starter').value;difficulty=difficultyNames[$('difficulty').value]?$('difficulty').value:'medium';$('activeDifficulty').textContent='Tento duel: '+difficultyNames[difficulty];human=null;opening=0;last=-1;winning=[];$('result').textContent='';duelEnd=performance.now()+DUEL;beginTurn()}
+$('newGame').addEventListener('click',newGame);document.querySelectorAll('[data-symbol]').forEach(b=>b.addEventListener('click',()=>choose(b.dataset.symbol,'human')));document.addEventListener('visibilitychange',()=>{if(phase!=='ended'){expired();clocks()}});setInterval(()=>{if(phase!=='ended'){expired();clocks()}},100);newGame();
+</script></body></html>
+
