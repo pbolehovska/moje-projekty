@@ -7,15 +7,15 @@
 <body><main><header><div><small>ČLOVĚK × POČÍTAČ</small><h1>Piškvorky <span class="muted">/ Swap1</span></h1></div><small>15 × 15 · pět v řadě</small></header>
 <div class="layout"><section><div id="board" class="board" role="group" aria-label="Hrací pole 15 krát 15"></div><div class="legend"><span id="humanLabel">Vy: symbol zatím neurčen</span><span id="aiLabel">Počítač: symbol zatím neurčen</span></div><p id="result" role="status"></p></section>
 <aside class="sidebar"><section class="panel"><div class="clockrow"><div><small>ČAS NA TAH</small><div id="turnClock" class="clock">0:15</div></div><div><small>ČAS DUELU</small><div id="duelClock" class="clock">10:00</div></div></div><div id="status" role="status" aria-live="polite"></div><div id="detail" class="muted"></div><div id="choices" class="choices" hidden><button data-symbol="X">Zvolit X</button><button data-symbol="O">Zvolit O</button></div></section>
-<section class="panel"><label for="starter">Kdo zahájí novou hru?</label><select id="starter"><option value="human">Já — položím X, O, X</option><option value="ai">Počítač — já si zvolím symbol</option></select><label for="difficulty">Obtížnost nové hry</label><select id="difficulty" aria-describedby="difficultyHelp"><option value="easy">Nejjednodušší</option><option value="medium" selected>Střední</option><option value="hard">Těžká</option></select><small id="difficultyHelp">Nejjednodušší občas přehlédne hrozbu. Střední vyhrává a blokuje přímé hrozby. Těžká zvažuje i odpověď soupeře. Změna platí po stisknutí Nová hra.</small><p id="activeDifficulty"></p><button id="newGame">Nová hra</button></section>
+<section class="panel"><label for="starter">Kdo zahájí novou hru?</label><select id="starter"><option value="human">Já — položím X, O, X</option><option value="ai">Počítač — já si zvolím symbol</option></select><label for="difficulty">Obtížnost nové hry</label><select id="difficulty" aria-describedby="difficultyHelp"><option value="easy">Nejjednodušší</option><option value="gentle" selected>Mírná</option><option value="medium">Střední</option><option value="hard">Těžká</option></select><small id="difficultyHelp">Nejjednodušší občas přehlédne hrozbu. Mírná brání častěji, ale stále dělá chyby. Střední vyhrává a blokuje přímé hrozby. Těžká zvažuje i odpověď soupeře. Změna platí po stisknutí Nová hra.</small><p id="activeDifficulty"></p><button id="newGame">Nová hra</button></section>
 <section class="panel rules"><h2>Jak se hraje</h2><ul><li>Zahajující hráč položí postupně <b>X, O, X</b>. Na každý kámen má 15 sekund.</li><li>Druhý hráč si do 15 sekund zvolí symbol. Zbývající symbol získá zahajující.</li><li>Potom hraje symbol s menším počtem kamenů. <b>Při shodě hraje X.</b> Po zahájení tedy pokračuje O.</li><li>Vyhrává alespoň pět vlastních kamenů v řadě, sloupci nebo diagonále. Delší řada také platí.</li><li>Vypršení času na tah či volbu symbolu znamená prohru rozhodujícího hráče. Po 10 minutách nebo zaplnění desky nastává remíza. Při současném vypršení má přednost limit duelu.</li></ul></section></aside></div><footer>Hra funguje offline. Čas běží i při přepnutí na jinou kartu. Nová hra ukončí rozehraný duel.</footer></main>
 <script>
 'use strict';
 const N=15,TURN=15000,DUEL=600000,dirs=[[1,0],[0,1],[1,1],[1,-1]];
 const $=id=>document.getElementById(id), other=s=>s==='X'?'O':'X';
 let board=[],phase='opening',starter='human',human=null,opening=0,turnEnd=0,duelEnd=0,aiTimer=null,gameId=0,last=-1,winning=[];
-let difficulty='medium';
-const difficultyNames={easy:'Nejjednodušší',medium:'Střední',hard:'Těžká'};
+let difficulty='gentle';
+const difficultyNames={easy:'Nejjednodušší',gentle:'Mírná',medium:'Střední',hard:'Těžká'};
 const cells=Array.from({length:N*N},(_,i)=>{const b=document.createElement('button');b.className='cell';b.type='button';b.addEventListener('click',()=>play(i,'human'));$('board').appendChild(b);return b});
 function lineAt(b,i,s){const r=Math.floor(i/N),c=i%N;for(const [dr,dc]of dirs){const line=[i];for(const sign of [-1,1]){let rr=r+sign*dr,cc=c+sign*dc;while(rr>=0&&rr<N&&cc>=0&&cc<N&&b[rr*N+cc]===s){line.push(rr*N+cc);rr+=sign*dr;cc+=sign*dc}}if(line.length>=5)return line}return []}
 function nextSymbol(){const x=board.filter(s=>s==='X').length,o=board.filter(s=>s==='O').length;return x<=o?'X':'O'}
@@ -32,6 +32,13 @@ function computerMove(b,s,level=difficulty,random=Math.random){
  const options=candidates(b);if(!options.length)return -1;
  const win=winningMove(b,s,options);if(win>=0)return win;
  const block=winningMove(b,other(s),options);
+ if(level==='gentle'){
+  if(block>=0&&random()<.75)return block;
+  const pool=rankedMoves(b,s).slice(0,4);
+  // Prefer good positions, with enough variation to leave opportunities to a learner.
+  const roll=random(),rank=roll<.5?0:roll<.75?1:roll<.9?2:3;
+  return pool[Math.min(rank,pool.length-1)].i;
+ }
  if(level==='easy'){
   if(block>=0&&random()<.45)return block;
   const pool=rankedMoves(b,s).slice(0,8);return pool[Math.floor(random()*pool.length)].i;
@@ -63,7 +70,7 @@ function clocks(){const now=performance.now();$('turnClock').textContent=time(tu
 function render(){for(let i=0;i<cells.length;i++){const b=cells[i];b.textContent=board[i]||'';b.className='cell'+(board[i]?' '+board[i].toLowerCase():'')+(i===last?' last':'')+(winning.includes(i)?' win':'');b.setAttribute('aria-label',`Řádek ${Math.floor(i/N)+1}, sloupec ${i%N+1}: ${board[i]||'prázdné'}`);b.setAttribute('aria-disabled',String(phase==='ended'||phase==='choice'||actor()!=='human'||!!board[i]))}
 $('humanLabel').textContent=human?'Vy: '+human:'Vy: symbol zatím neurčen';$('aiLabel').textContent=human?'Počítač: '+other(human):'Počítač: symbol zatím neurčen';$('choices').hidden=!(phase==='choice'&&actor()==='human');
 if(phase==='ended'){$('status').textContent='Duel skončil';$('detail').textContent='Pro další duel stiskněte Nová hra.'}else{const name=actor()==='human'?'Vy':'Počítač';$('status').textContent=phase==='choice'?name+' vybíráte symbol'.replace('vybíráte',actor()==='human'?'vybíráte':'vybírá'):name+' '+(actor()==='human'?'hrajete':'hraje')+' '+symbol();$('detail').textContent=phase==='opening'?`Swap1 · úvodní kámen ${opening+1} ze 3. Všechny tři kameny pokládá zahajující hráč.`:phase==='choice'?'Swap1 · zvolte X nebo O. Na výběr je 15 sekund. Poté hraje O.':'Hraje symbol s menším počtem kamenů; při shodě X.'}clocks()}
-function newGame(){clearTimeout(aiTimer);gameId++;board=Array(N*N).fill(null);phase='opening';starter=$('starter').value;difficulty=difficultyNames[$('difficulty').value]?$('difficulty').value:'medium';$('activeDifficulty').textContent='Tento duel: '+difficultyNames[difficulty];human=null;opening=0;last=-1;winning=[];$('result').textContent='';duelEnd=performance.now()+DUEL;beginTurn()}
+function newGame(){clearTimeout(aiTimer);gameId++;board=Array(N*N).fill(null);phase='opening';starter=$('starter').value;difficulty=difficultyNames[$('difficulty').value]?$('difficulty').value:'gentle';$('activeDifficulty').textContent='Tento duel: '+difficultyNames[difficulty];human=null;opening=0;last=-1;winning=[];$('result').textContent='';duelEnd=performance.now()+DUEL;beginTurn()}
 $('newGame').addEventListener('click',newGame);document.querySelectorAll('[data-symbol]').forEach(b=>b.addEventListener('click',()=>choose(b.dataset.symbol,'human')));document.addEventListener('visibilitychange',()=>{if(phase!=='ended'){expired();clocks()}});setInterval(()=>{if(phase!=='ended'){expired();clocks()}},100);newGame();
 </script></body></html>
 
