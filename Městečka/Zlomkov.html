@@ -296,6 +296,11 @@ dialog.pizza-dialog.pizza-keypad-ready{inset:0!important;width:100vw!important;h
  .solar-dialog.activity-playing .solar-panels{grid-auto-rows:46px;max-width:460px;gap:10px;margin:14px auto}
  .solar-dialog.activity-playing .solar-panel{min-height:0;height:46px}
 }
+
+/* Panely jsou krátké obdélníky s poměrem stran přibližně 5 : 4. */
+.solar-dialog.activity-playing .solar-panels{max-width:660px;grid-auto-rows:auto;align-items:center;justify-items:center;gap:14px}
+.solar-dialog.activity-playing .solar-panel{width:100%;height:auto;aspect-ratio:5/4;min-height:0}
+@media(max-width:800px){.solar-dialog.activity-playing .solar-panels{max-width:360px;grid-auto-rows:auto;gap:10px}.solar-dialog.activity-playing .solar-panel{height:auto;aspect-ratio:5/4;min-height:0}}
 </style>
 </head>
 <body>
