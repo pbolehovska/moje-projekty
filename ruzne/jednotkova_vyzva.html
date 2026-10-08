@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Jednotková výzva</title>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--text:#172033;--muted:#657086;--line:#dfe4ee;--accent:#4f46e5;--accent2:#eef2ff;--ok:#16803a;--bad:#b42318}
+*{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+.wrap{max-width:980px;margin:auto;padding:24px}.top{text-align:center;margin-bottom:20px}.top h1{margin:0;font-size:clamp(28px,5vw,44px)}.top p{color:var(--muted);margin:7px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:22px;box-shadow:0 10px 30px rgba(20,30,55,.06)}
+h2{margin:0 0 8px}.muted{color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.cat{min-height:82px;text-align:left;border:2px solid var(--line);background:white;border-radius:16px;padding:13px;font-size:16px;font-weight:700;cursor:pointer}.cat small{display:block;color:var(--muted);font-weight:500;margin-top:4px}.cat.active{border-color:var(--accent);background:var(--accent2)}
+.options{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px}.box{border:1px solid var(--line);border-radius:16px;padding:15px}.choice{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:13px;padding:10px;margin-top:8px;cursor:pointer}.choice input{margin-top:4px}.preview{margin:16px 0;background:#f1f3f7;border-radius:12px;padding:12px;color:var(--muted)}
+.primary,.secondary{border:0;border-radius:13px;min-height:48px;padding:11px 18px;font-size:16px;font-weight:750;cursor:pointer}.primary{background:var(--accent);color:#fff;width:100%}.primary:disabled{opacity:.4;cursor:not-allowed}.secondary{background:white;border:1px solid var(--line);color:var(--text)}
+.hidden{display:none!important}.gamegrid{display:grid;grid-template-columns:1fr 210px;gap:16px}.stats{display:flex;gap:22px;justify-content:flex-end}.stat{text-align:right}.stat small{display:block;color:var(--muted)}
+.question{text-align:center;margin:55px 0 35px}.question small{color:var(--muted)}#question{font-size:clamp(30px,6vw,48px);font-weight:800;margin-top:8px}
+.answerrow{display:flex;max-width:480px;margin:auto;gap:8px}#answer{min-width:0;flex:1;border:2px solid var(--line);border-radius:13px;padding:13px;text-align:center;font-size:22px}#target{min-width:78px;border:2px solid var(--line);border-radius:13px;display:flex;align-items:center;justify-content:center;font-weight:800}.submit{max-width:480px;margin:9px auto 0;display:block}
+.feedback{text-align:center;min-height:30px;margin-top:14px;font-weight:750}.side .box{background:white;margin-bottom:12px}.big{font-size:34px;font-weight:850}.timerline{display:flex;justify-content:space-between;margin-top:20px}.bar{height:9px;background:#edf0f5;border-radius:99px;overflow:hidden;margin-top:6px}.bar div{height:100%;background:var(--accent);width:100%}
+.finish{text-align:center}.finish .emoji{font-size:50px}.actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:18px}
+@media(max-width:720px){.grid{grid-template-columns:repeat(2,1fr)}.options,.gamegrid{grid-template-columns:1fr}.side{display:grid;grid-template-columns:1fr 1fr;gap:10px}.side .secondary{grid-column:1/-1}.question{margin:38px 0 28px}.wrap{padding:14px}.card{padding:17px}}
+.unitlist{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px}.unit{border:1px solid #c7cdd8;border-radius:12px;background:#f1f3f7;color:var(--text);padding:11px 17px;font:inherit;font-weight:700;cursor:pointer}.unit.selected{background:#263149;color:white;border-color:#263149}.unit:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.number-switch{display:flex;justify-content:flex-end;gap:4px;margin-bottom:16px}.number-switch button{font:inherit;padding:9px 13px;border:1px solid var(--line);border-radius:10px;background:white;color:var(--text);cursor:pointer}.number-switch button[aria-pressed="true"]{background:#263149;color:white}#answerhint{text-align:center;margin:10px 0 0;font-size:14px}#question{overflow-wrap:anywhere}
+.setup-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px}.setup-heading h2{margin:0}.setup-heading .number-switch{margin:0;margin-left:auto;flex-wrap:wrap}button,input{touch-action:manipulation}.cat,.box,.gamegrid>*{min-width:0}.cat small{overflow-wrap:anywhere}.feedback{overflow-wrap:anywhere}#target{flex-shrink:0}@media(max-width:400px){.wrap{padding:10px}.card{padding:14px}.setup-heading{align-items:flex-start}.setup-heading .number-switch{width:100%;justify-content:flex-end}.number-switch button{min-height:44px;padding:9px 11px}.cat{padding:10px;font-size:15px}.stats{gap:16px}.side .box{padding:12px}#question{font-size:30px}.question{margin:30px 0 22px}} </style>
+</head>
+<body>
+<div class="wrap">
+
+
+
+<section id="setup" class="card">
+<div class="setup-heading"><h2>Co chceš procvičovat?</h2><div class="number-switch" role="group" aria-label="Zápis čísel"><button id="decimals" type="button" aria-pressed="true">Desetinná čísla</button><button id="fractions" type="button" aria-pressed="false">Zlomky</button></div></div><div class="muted">Vyber jednu veličinu. Trénink zůstane jen u ní.</div>
+<div id="cats" class="grid" style="margin-top:16px"></div>
+<div id="unitbox" class="box hidden" style="margin-top:16px"><b>Jednotky k procvičování</b><div class="muted">Kliknutím vyber alespoň dvě jednotky. Tmavé jsou vybrané; dalším kliknutím je odznačíš.</div><div id="units" class="unitlist"></div><div id="unitcount" class="muted" style="margin-top:10px" aria-live="polite"></div></div>
+<div class="options">
+ <div class="box"><b>Obtížnost</b>
+  <label class="choice"><input type="radio" name="difficulty" value="easy"><span><b>🌱 Rozcvička</b><br><span class="muted"><span id="easydesc">celá i jednoduchá desetinná čísla, jednodušší převody</span></span></span></label>
+  <label class="choice"><input type="radio" name="difficulty" value="normal" checked><span><b>⚡ Trénink</b><br><span class="muted"><span id="normaldesc">desetinná čísla a větší skoky</span></span></span></label>
+  <label class="choice"><input type="radio" name="difficulty" value="hard"><span><b>🔥 Výzva</b><br><span class="muted">malá i velká čísla</span></span></label>
+ </div>
+ <div class="box"><b>Režim</b>
+  <label class="choice"><input type="radio" name="mode" value="practice" checked><span><b>🎯 Trénink</b><br><span class="muted">bez časového limitu</span></span></label>
+  <label class="choice"><input type="radio" name="mode" value="timed"><span><b>⏱️ 2 minuty</b><br><span class="muted">kolik převodů zvládneš?</span></span></label>
+ </div>
+</div>
+<div id="preview" class="preview">Vyber veličinu.</div>
+<button id="start" class="primary" disabled>Spustit trénink →</button>
+</section>
+
+<section id="game" class="hidden">
+<div class="gamegrid">
+ <div class="card">
+  <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap"><div><b id="gamecat"></b><div id="gamediff" class="muted"></div></div><div class="stats"><div class="stat"><small>SÉRIE</small><b id="streak">0 🔥</b></div><div class="stat"><small>SKÓRE</small><b id="score">0</b></div></div></div>
+  <div id="timerwrap" class="hidden"><div class="timerline"><span>Zbývá</span><b id="timer">2:00</b></div><div class="bar"><div id="timebar"></div></div></div>
+  <div class="question"><small>Převeď</small><div id="question"></div></div>
+  <form id="form"><div class="answerrow"><input id="answer" inputmode="decimal" autocomplete="off" placeholder="výsledek" aria-label="Výsledek"><div id="target"></div></div><button class="primary submit">Potvrdit ↵</button></form>
+  <p id="answerhint" class="muted">Výsledek zapiš jako desetinné nebo celé číslo. U nekonečného desetinného rozvoje použij alespoň 6 platných číslic.</p>
+  <div id="feedback" class="feedback" aria-live="polite"></div>
+ </div>
+ <aside class="side">
+  <div class="box"><span class="muted">Správně</span><div id="correct" class="big">0</div><div class="muted">Chybně: <b id="wrong">0</b></div></div>
+  <div class="box"><span class="muted">Nejlepší série</span><div id="best" class="big">0</div></div>
+  <button id="back" class="secondary">← Změnit výběr</button>
+ </aside>
+</div>
+</section>
+
+<section id="finish" class="card finish hidden"><div class="emoji">🏆</div><h2>Čas vypršel!</h2><p id="summary"></p><div class="actions"><button id="again" class="primary" style="width:auto">Hrát znovu</button><button id="choose" class="secondary">Jiná veličina</button></div></section>
+</div>
+
+<script>
+const data={
+ length:{name:"📏 Délka",desc:"mm · cm · dm · m · km",units:[["mm",.001],["cm",.01],["dm",.1],["m",1],["km",1000]]},
+ area:{name:"🟩 Obsah / plocha",desc:"mm² · cm² · dm² · m² · a · ha · km²",units:[["mm²",1e-6],["cm²",1e-4],["dm²",.01],["m²",1],["a",100],["ha",10000],["km²",1e6]]},
+ volume:{name:"🧊 Objem",desc:"mm³ · cm³ · dm³ · m³ · ml · cl · dl · l · hl",units:[["mm³",1e-9],["cm³",1e-6],["dm³",.001],["m³",1],["ml",1e-6],["cl",1e-5],["dl",1e-4],["l",.001],["hl",.1]]},
+ mass:{name:"⚖️ Hmotnost",desc:"mg · g · dkg · kg · q · t",units:[["mg",1e-6],["g",.001],["dkg",.01],["kg",1],["q",100],["t",1000]]},
+ time:{name:"⏱️ Čas",desc:"s · min · h · den",units:[["s",1],["min",60],["h",3600],["den",86400]]},
+ speed:{name:"🚗 Rychlost",desc:"m/s ↔ km/h",units:[["m/s",1],["km/h",1/3.6]]}
+};
+const $=id=>document.getElementById(id);let selected=null,current=null,score=0,streak=0,best=0,correct=0,wrong=0,timerId=null,timeLeft=120,nextId=null,locked=false,playing=false,deadline=0;const selections={};
+function selectedUnits(){return selected ? data[selected].units.filter(u=>selections[selected].has(u[0])) : []}
+function canStart(){const units=selectedUnits();return units.length>=2&&(numberMode!=="fraction"||units.some(u=>u[1]!==units[0][1]))}
+function updateSelection(){const count=selectedUnits().length;$("start").disabled=!canStart();$("unitcount").textContent="Vybráno: "+count+". "+(count<2?"Vyber alespoň dvě jednotky.":!canStart()?"Pro zlomky vyber také jednotku jiné velikosti (např. l). Mezi shodnými jednotkami zůstává číslo stejné.":"Můžeš spustit hru.");$("preview").textContent="Budeš procvičovat: "+data[selected].name+" — "+selectedUnits().map(u=>u[0]).join(" · ")}
+function showUnits(){ $("unitbox").classList.remove("hidden");$("units").replaceChildren();data[selected].units.forEach(u=>{const b=document.createElement("button");b.type="button";b.className="unit";b.textContent=u[0];const refresh=()=>{const on=selections[selected].has(u[0]);b.classList.toggle("selected",on);b.setAttribute("aria-pressed",String(on))};b.onclick=()=>{const s=selections[selected];s.has(u[0])?s.delete(u[0]):s.add(u[0]);refresh();updateSelection()};refresh();$("units").appendChild(b)});updateSelection()}
+Object.entries(data).forEach(([key,g])=>{selections[key]=new Set();const b=document.createElement("button");b.type="button";b.className="cat";b.innerHTML=g.name+"<small>"+g.desc+"</small>";b.onclick=()=>{selected=key;document.querySelectorAll(".cat").forEach(x=>x.classList.remove("active"));b.classList.add("active");showUnits()};$("cats").appendChild(b)});
+const diff=()=>document.querySelector('input[name="difficulty"]:checked').value, mode=()=>document.querySelector('input[name="mode"]:checked').value;
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+function fmt(n){return Number(n.toPrecision(15)).toLocaleString("cs-CZ",{maximumFractionDigits:20})}
+let numberMode="decimal";
+function gcd(a,b){a=a<0n?-a:a;while(b){[a,b]=[b,a%b]}return a}
+function rational(n,d=1n){n=BigInt(n);d=BigInt(d);if(d===0n)throw Error("Nulový jmenovatel");if(d<0n){n=-n;d=-d}const g=gcd(n,d);return {n:n/g,d:d/g}}
+function decimalRational(value){const [mantissa,exponent="0"]=String(value).toLowerCase().split("e");const digits=(mantissa.split(".")[1]||"").length;const power=Number(exponent)-digits;const n=BigInt(mantissa.replace(".",""));return power>=0?rational(n*10n**BigInt(power)):rational(n,10n**BigInt(-power))}
+function unitRational(u){return u[0]==="km/h"?rational(5n,18n):decimalRational(u[1])}
+function fractionText(r){return r.d===1n?String(r.n):r.n+"/"+r.d}
+function questionText(q){return (numberMode==="fraction"?fractionText(q.source):fmt(Number(q.source.n)/Number(q.source.d)))+" "+q.from+" = ?"}
+function updateAnswerHint(){$("answerhint").textContent=numberMode==="fraction"?"Zapiš zlomek v základním tvaru (např. 3/4), nebo celé číslo. Použij lomítko /.":(selected==="time"||selected==="speed")?"Výsledek zapiš jako desetinné nebo celé číslo. Stačí zaokrouhlit na 2 platné číslice.":"Výsledek zapiš jako desetinné nebo celé číslo. U nekonečného desetinného rozvoje použij alespoň 6 platných číslic."} function showQuestion(){updateAnswerHint();current.text=questionText(current);$("question").textContent=current.text;$("target").textContent=current.unit}
+function setNumberMode(value){numberMode=value;$("decimals").setAttribute("aria-pressed",String(value==="decimal"));$("fractions").setAttribute("aria-pressed",String(value==="fraction"));$("answer").setAttribute("inputmode",value==="fraction"?"text":"decimal");$("answer").placeholder=value==="fraction"?"např. 3/4 nebo 2":"výsledek";$("answerhint").textContent=value==="fraction"?"Zapiš zlomek v základním tvaru (např. 3/4), nebo celé číslo. Použij lomítko /.":"Výsledek zapiš jako desetinné nebo celé číslo. U nekonečného desetinného rozvoje použij alespoň 6 platných číslic.";$("easydesc").textContent=value==="fraction"?"jednoduché zlomky a převody":"celá i jednoduchá desetinná čísla, jednodušší převody";$("normaldesc").textContent=value==="fraction"?"zlomky a větší skoky":"desetinná čísla a větší skoky";if(selected)updateSelection();if(playing&&current){showQuestion();$("answer").value="";if(!locked)$("feedback").textContent=""}}
+$("decimals").onclick=()=>setNumberMode("decimal");$("fractions").onclick=()=>setNumberMode("fraction");
+function checkFraction(raw,expected){const match=raw.match(/^([+-]?\d+)(?:\s*[/]\s*(\d+))?$/);if(!match)return {error:"Zapiš celé číslo nebo zlomek, například 3/4."};const n=BigInt(match[1]),d=BigInt(match[2]||"1");if(d===0n)return {error:"Jmenovatel nesmí být nula."};if(gcd(n,d)!==1n)return {error:"Zkrať zlomek do základního tvaru."};if(match[2]&&d===1n)return {error:"Výsledek zapiš jako celé číslo."};return {ok:n===expected.n&&d===expected.d}}
+function makeQ(){
+ const units=selectedUnits(),d=diff();
+ if(!canStart())throw new Error("Vyber alespoň dvě jednotky.");
+ const a=pick(units);let targets=units.filter(u=>u!==a&&(numberMode!=="fraction"||u[1]!==a[1]));
+ if(d==="easy"){const distance=u=>Math.abs(Math.log10(a[1]/u[1]));const nearest=Math.min(...targets.map(distance));targets=targets.filter(u=>Math.abs(distance(u)-nearest)<1e-10)}
+ const b=pick(targets);
+ const vals=d==="easy"?[.1,.2,.5,1.5,2.5,1,2,3,4,5,10,20,50,100]:d==="normal"?[.2,.5,1.2,2.5,3.5,7.5,12,25,40,125]:[.003,.008,.025,.12,.75,1.25,3.6,17.5,250,1250];
+ const fa=unitRational(a),fb=unitRational(b),rate=rational(fa.n*fb.d,fa.d*fb.n);
+ let source,exact;
+ if(numberMode==="fraction"){
+  const integers=d==="easy"?[1,2,3,4,5]:d==="normal"?[1,2,3,5,7,12,25]:[1,3,7,11,17,125,250];
+  const candidates=[];
+  for(const k of integers){
+   const result=rational(BigInt(k)*rate.n,rate.d);
+   if(result.d!==1n)candidates.push({source:rational(k),exact:result});
+   const input=rational(BigInt(k)*rate.d,rate.n);
+   if(input.d!==1n)candidates.push({source:input,exact:rational(k)});
+  }
+  ({source,exact}=pick(candidates));
+ }else{source=decimalRational(pick(vals));exact=rational(source.n*rate.n,source.d*rate.d)}
+ const q={source,from:a[0],unit:b[0],exact,answer:Number(exact.n)/Number(exact.d)};q.text=questionText(q);return q
+}
+function next(){if(!playing)return;locked=false;nextId=null;current=makeQ();showQuestion();$("answer").value="";$("answer").focus()}
+function render(){$("score").textContent=score;$("streak").textContent=streak+" 🔥";$("best").textContent=best;$("correct").textContent=correct;$("wrong").textContent=wrong}
+function cancelNext(){if(nextId!==null)clearTimeout(nextId);nextId=null;locked=false}
+function stopTimer(){if(timerId){clearInterval(timerId);timerId=null}}
+function begin(){if(!canStart())return;stopTimer();cancelNext();playing=true;score=streak=best=correct=wrong=0;timeLeft=120;$("setup").classList.add("hidden");$("finish").classList.add("hidden");$("game").classList.remove("hidden");$("gamecat").textContent=data[selected].name;$("gamediff").textContent={easy:"🌱 Rozcvička",normal:"⚡ Trénink",hard:"🔥 Výzva"}[diff()];$("timerwrap").classList.toggle("hidden",mode()!=="timed");$("feedback").textContent="";render();next();if(mode()==="timed"){deadline=Date.now()+120000;updateTimer();timerId=setInterval(()=>{timeLeft=Math.max(0,Math.ceil((deadline-Date.now())/1000));updateTimer();if(timeLeft<=0)finish()},250)}}
+function updateTimer(){$("timer").textContent=Math.floor(timeLeft/60)+":"+String(timeLeft%60).padStart(2,"0");$("timebar").style.width=(timeLeft/120*100)+"%"}
+function finish(){playing=false;stopTimer();cancelNext();$("game").classList.add("hidden");$("finish").classList.remove("hidden");$("summary").innerHTML="Správně: <b>"+correct+"</b> · Chybně: <b>"+wrong+"</b> · Skóre: <b>"+score+"</b> · Nejlepší série: <b>"+best+"</b>"}
+$("form").onsubmit=e=>{e.preventDefault();if(!playing||locked)return;if(mode()==="timed"&&Date.now()>=deadline){finish();return}const raw=$("answer").value.trim().replace(",",".");if(!raw){$("feedback").textContent="Napiš výsledek.";return}let ok;if(numberMode==="fraction"){const result=checkFraction(raw,current.exact);if(result.error){$("feedback").style.color="var(--bad)";$("feedback").textContent=result.error;return}ok=result.ok}else{const n=Number(raw);if(!Number.isFinite(n)){$("feedback").textContent="Zadej číslo.";return}ok=Math.abs(n-current.answer)<=Math.abs(current.answer)*5e-6||((selected==="time"||selected==="speed")&&Number(n.toPrecision(2))===Number(current.answer.toPrecision(2)))}locked=true;if(ok){correct++;streak++;best=Math.max(best,streak);const gain=10+Math.min(streak,10)*2;score+=gain;$("feedback").style.color="var(--ok)";$("feedback").textContent="✓ Správně! +"+gain;render();nextId=setTimeout(next,180)}else{wrong++;streak=0;$("feedback").style.color="var(--bad)";$("feedback").textContent="✗ Správně: "+(numberMode==="fraction"?fractionText(current.exact):fmt(current.answer))+" "+current.unit;render();nextId=setTimeout(next,850)}};
+$("start").onclick=begin;$("again").onclick=begin;
+function choose(){playing=false;stopTimer();cancelNext();$("game").classList.add("hidden");$("finish").classList.add("hidden");$("setup").classList.remove("hidden")}
+$("back").onclick=choose;$("choose").onclick=choose;
+</script>
+</body>
+</html>
+
+
+
+
+
