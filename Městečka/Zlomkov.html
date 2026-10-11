@@ -943,7 +943,77 @@ const blocksStyle=document.createElement('style');blocksStyle.textContent=`
 document.head.append(blocksStyle);
 const blankTowerStyle=document.createElement('style');blankTowerStyle.textContent=`.build-block-tower{display:block;position:relative;flex:none;height:78%;max-height:none;min-height:220px;overflow:hidden;background:#fff;border:3px solid #397c43!important;border-bottom:0!important;cursor:pointer;}.build-block-tower.purple{border-color:#79238a!important}.build-stack{position:absolute;left:0;right:0;top:0;height:100%;bottom:0;display:flex;flex-direction:column-reverse;}.build-assembled-piece{height:calc(100% / var(--segments));flex:0 0 calc(100% / var(--segments));display:grid;place-items:center;background:#51b953;color:white;border-bottom:2px solid #397c43;font-size:clamp(11px,1.5vw,19px);}.build-block-tower.purple .build-assembled-piece{background:#a928bb;border-bottom-color:#79238a}.build-undo{min-height:30px!important;padding:4px 7px!important;font-size:10px!important;background:#e8ede3!important;color:#36524c!important}.build-undo:disabled{opacity:.4;cursor:default}@media(max-width:700px){.build-block-tower{min-height:220px}.build-undo{font-size:9px!important;padding:3px!important}}`;
 document.head.append(blankTowerStyle);
-if(directGame&&activityLevels[directGame]?.[directLevel]){setMode('student');openBuilding(directGame,directLevel);}
+/* Responzivní pracovní plocha staveniště pro tabuli i telefon. */
+const responsiveBlocksStyle=document.createElement('style');responsiveBlocksStyle.textContent=`
+#building-dialog.build-blocks-dialog{overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior:contain}
+#building-dialog.build-blocks-dialog #dialog-content{width:min(100%,1600px);margin-inline:auto}
+.build-blocks-dialog .build-block-workbench{display:grid;grid-template-columns:minmax(180px,clamp(190px,18vw,260px)) minmax(0,1fr);gap:clamp(12px,2vw,24px);align-items:stretch}
+.build-blocks-dialog .build-block-main{min-width:0}
+.build-blocks-dialog .build-given-fractions{min-height:clamp(68px,10vh,112px)}
+.build-blocks-dialog .build-given-label{font-size:clamp(12px,1.1vw,17px)}
+.build-blocks-dialog .build-skyscrapers{height:clamp(300px,50vh,500px);min-height:300px;padding:clamp(10px,2vh,20px) clamp(8px,2vw,24px) 0;gap:clamp(12px,3vw,40px)}
+.build-blocks-dialog .build-build-col{width:min(30%,230px);min-width:100px}
+.build-blocks-dialog .build-block-tower{height:78%;min-height:210px}
+.build-blocks-dialog .build-block-pieces{grid-template-columns:1fr;gap:clamp(5px,.8vh,9px)}
+.build-blocks-dialog .build-block-palette{padding:clamp(10px,1.5vw,18px)}
+.build-blocks-dialog .build-block-palette h4{font-size:clamp(14px,1.2vw,18px)}
+.build-blocks-dialog .build-block-palette>p{font-size:clamp(11px,.9vw,13px)}
+.build-blocks-dialog .build-unit-piece{min-height:clamp(42px,6vh,54px)!important;font-size:clamp(16px,1.5vw,22px)!important}
+.build-blocks-dialog .build-status{font-size:clamp(14px,1.2vw,18px)!important;padding:6px 10px;margin:6px 0!important;line-height:1.4}
+.build-blocks-dialog .build-next{min-height:44px}
+.build-blocks-dialog button:focus-visible{outline:4px solid #e49a36;outline-offset:3px}
+@media(max-width:700px){
+ .build-blocks-dialog{width:100vw!important;max-width:100vw!important;padding:12px 10px 72px!important}
+ .build-blocks-dialog #dialog-content{height:auto!important;min-height:0}
+ .build-blocks-dialog .build-progress{font-size:13px;margin-bottom:3px}
+ .build-blocks-dialog #dialog-content h3{font-size:clamp(18px,5vw,23px);margin:5px 38px 6px 0}
+ .build-blocks-dialog .build-instruction{font-size:12px;margin:4px 0 8px;line-height:1.35}
+ .build-blocks-dialog .build-block-workbench{display:flex;flex-direction:column;gap:8px}
+ .build-blocks-dialog .build-block-main{order:1}
+ .build-blocks-dialog .build-block-palette{order:2;padding:8px 10px}
+ .build-blocks-dialog .build-block-palette h4{display:inline-block;font-size:13px;margin:0 8px 5px 0}
+ .build-blocks-dialog .build-block-palette>p{display:inline;font-size:10px;margin:0 3px 0 0}
+ .build-blocks-dialog .build-block-palette>p:last-child{display:none}
+ .build-blocks-dialog .build-block-pieces{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+ .build-blocks-dialog .build-unit-piece{min-height:44px!important;padding:4px!important;font-size:17px!important}
+ .build-blocks-dialog .build-unit-piece .build-fraction{font-size:17px;min-width:22px}
+ .build-blocks-dialog .build-given-fractions{min-height:65px;padding:7px;gap:clamp(5px,3vw,20px)}
+ .build-blocks-dialog .build-given{font-size:clamp(22px,7vw,32px);gap:4px;flex-direction:column}
+ .build-blocks-dialog .build-given-label{font-size:11px}
+ .build-blocks-dialog .build-given-sign{width:34px;height:34px;font-size:20px}
+ .build-blocks-dialog .build-skyscrapers{height:clamp(205px,34dvh,290px);min-height:205px;margin-top:8px;padding:8px 5px 0;gap:8px}
+ .build-blocks-dialog .build-build-col{width:43%;min-width:0;gap:4px}
+ .build-blocks-dialog .build-block-tower{width:90%;height:calc(100% - 45px);min-height:145px}
+ .build-blocks-dialog .build-assembled-piece{font-size:clamp(11px,3vw,16px)}
+ .build-blocks-dialog .build-build-col>b{font-size:11px}
+ .build-blocks-dialog .build-undo{min-height:38px!important;font-size:11px!important;padding:6px 9px!important}
+ .build-blocks-dialog .build-block-compare{padding:7px}
+ .build-blocks-dialog .build-block-compare p{font-size:13px}
+ .build-blocks-dialog .build-block-compare button{min-width:50px;min-height:44px;font-size:22px}
+ .build-blocks-dialog .build-status{font-size:12px!important;line-height:1.35;min-height:24px;padding:4px 5px;margin:4px 0!important}
+ .build-blocks-dialog .build-next{margin:4px 0;min-height:42px}
+ .build-blocks-dialog>.close{right:8px!important;top:8px!important;width:38px;height:38px}
+ .build-blocks-dialog>.return{left:10px!important;bottom:8px!important;min-height:40px;padding:8px 12px;font-size:12px}
+}
+@media(max-height:700px) and (min-width:701px){
+ .build-blocks-dialog{padding:8px 18px 48px!important}
+ .build-blocks-dialog .build-block-workbench{grid-template-columns:minmax(150px,18vw) minmax(0,1fr);gap:12px}
+ .build-blocks-dialog .build-skyscrapers{height:42dvh;min-height:215px}
+ .build-blocks-dialog .build-block-tower{min-height:160px}
+ .build-blocks-dialog .build-unit-piece{min-height:39px!important}
+}
+@media(orientation:landscape) and (max-height:540px){
+ .build-blocks-dialog{padding:8px 12px 44px!important}
+ .build-blocks-dialog .build-instruction{margin:2px 0 4px}
+ .build-blocks-dialog .build-block-workbench{grid-template-columns:minmax(145px,17vw) minmax(0,1fr)}
+ .build-blocks-dialog .build-block-pieces{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+ .build-blocks-dialog .build-skyscrapers{height:34dvh;min-height:145px}
+ .build-blocks-dialog .build-given-fractions{min-height:52px;padding:5px}
+ .build-blocks-dialog .build-block-tower{min-height:105px}
+ .build-blocks-dialog .build-unit-piece{min-height:34px!important;font-size:15px!important}
+}
+`;
+document.head.append(responsiveBlocksStyle);if(directGame&&activityLevels[directGame]?.[directLevel]){setMode('student');openBuilding(directGame,directLevel);}
 </script>
 </body>
 </html>
