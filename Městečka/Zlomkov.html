@@ -946,7 +946,7 @@ document.head.append(blankTowerStyle);
 /* Responzivní pracovní plocha staveniště pro tabuli i telefon. */
 const responsiveBlocksStyle=document.createElement('style');responsiveBlocksStyle.textContent=`
 #building-dialog.build-blocks-dialog{overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior:contain}
-#building-dialog.build-blocks-dialog #dialog-content{width:min(100%,1600px);margin-inline:auto}
+#building-dialog.build-blocks-dialog #dialog-content{height:auto!important;display:block!important;align-items:initial!important;justify-content:initial!important;width:min(100%,1600px);margin:0 auto;min-height:0}
 .build-blocks-dialog .build-block-workbench{display:grid;grid-template-columns:minmax(180px,clamp(190px,18vw,260px)) minmax(0,1fr);gap:clamp(12px,2vw,24px);align-items:stretch}
 .build-blocks-dialog .build-block-main{min-width:0}
 .build-blocks-dialog .build-given-fractions{min-height:clamp(68px,10vh,112px)}
