@@ -162,11 +162,13 @@ function makeVariedStory(token){
  const unknown=task.unknown;
  if(activeTopic==='speed'){
   const {unknown,actor}=task;
+  const answerUnitNames={m:'metrech',km:'kilometrech',dm:'decimetrech',cm:'centimetrech','m/s':'metrech za sekundu','km/h':'kilometrech za hodinu','km/s':'kilometrech za sekundu',s:'sekundách',min:'minutách',h:'hodinách'};
+  const answerUnitInstruction=` Výsledek uveď v ${answerUnitNames[task.answerUnit]||task.answerUnit}.`;
   const settings={Cyklista:['po cyklostezce','mezi obcemi','po rovinaté silnici'],Vlak:['mezi nádražími','po železniční trati'],Auto:['po dálnici','mezi městy'],Běžec:['na atletické dráze','v parku'],Loď:['po řece','přes jezero'],Chodec:['po turistické stezce','mezi vesnicemi']};
   const place=pick(settings[actor]||['po své trase']);
-  if(unknown==='s')return pick([`${actor} jede ${place} rychlostí ${token('v')}. Jakou dráhu urazí za ${token('t')}?`,`Na výletě se ${actor.toLowerCase()} pohybuje ${place} rychlostí ${token('v')}. Kolik ujede za ${token('t')}?`]);
-  if(unknown==='v')return pick([`${actor} urazí ${token('s')} ${place} za ${token('t')}. Jakou rychlostí se pohybuje?`,`Cesta dlouhá ${token('s')} trvala ${token('t')}. Urči průměrnou rychlost.`]);
-  return pick([`${actor} urazí ${token('s')} ${place} rychlostí ${token('v')}. Jak dlouho cesta trvá?`,`Jak dlouho pojede ${actor.toLowerCase()} ${place}, pokud urazí ${token('s')} rychlostí ${token('v')}?`]);
+  if(unknown==='s')return pick([`${actor} jede ${place} rychlostí ${token('v')}. Jakou dráhu urazí za ${token('t')}?${answerUnitInstruction}`,`Na výletě se ${actor.toLowerCase()} pohybuje ${place} rychlostí ${token('v')}. Kolik ujede za ${token('t')}?${answerUnitInstruction}`]);
+  if(unknown==='v')return pick([`${actor} urazí ${token('s')} ${place} za ${token('t')}. Jakou rychlostí se pohybuje?${answerUnitInstruction}`,`Cesta dlouhá ${token('s')} trvala ${token('t')}. Urči průměrnou rychlost.${answerUnitInstruction}`]);
+  return pick([`${actor} urazí ${token('s')} ${place} rychlostí ${token('v')}. Jak dlouho cesta trvá?${answerUnitInstruction}`,`Jak dlouho pojede ${actor.toLowerCase()} ${place}, pokud urazí ${token('s')} rychlostí ${token('v')}?${answerUnitInstruction}`]);
  }
  if(activeTopic==='density'){
   const [item,material]=pick([['dřevěný hranol','dřeva'],['kovový váleček','kovu'],['plastová kostka','plastu'],['kámen','horniny'],['vzorek kapaliny','kapaliny'],['skleněná kulička','skla']]);
