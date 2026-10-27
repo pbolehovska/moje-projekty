@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Magnetická slova – skupiny</title>
+<style>
+:root{
+  --bg:#f5f7fb; --panel:#fff; --ink:#172033; --muted:#64748b; --line:#dbe3ee;
+  --g1:#dcfce7; --g1b:#16a34a; --g1t:#14532d;
+  --g2:#dbeafe; --g2b:#2563eb; --g2t:#1e3a8a;
+  --g3:#ffedd5; --g3b:#ea580c; --g3t:#7c2d12;
+  --g4:#f3e8ff; --g4b:#9333ea; --g4t:#581c87;
+  --g5:#fce7f3; --g5b:#db2777; --g5t:#831843;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+button,select,textarea,input{font:inherit}
+button{border:0;border-radius:12px;padding:11px 15px;font-weight:800;cursor:pointer;background:#e7edf5;color:#162033}
+button.primary{background:#2563eb;color:#fff}
+button.green{background:#16a34a;color:#fff}
+button.danger{background:#fee2e2;color:#991b1b}
+button:disabled{opacity:.45;cursor:not-allowed}
+#editor{min-height:100%;padding:22px}
+h1{margin:0 0 4px;font-size:32px}
+.lead{color:var(--muted);margin-bottom:16px;font-size:17px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:0 8px 26px rgba(30,41,59,.07);margin-bottom:14px}
+.toprow{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.toprow label{font-weight:800}
+select{padding:8px 10px;border-radius:10px;border:1px solid #cbd5e1;background:#fff;font-weight:800}
+#listColumns{display:grid;gap:14px;margin-top:15px}
+.listCol{border:2px solid;border-radius:18px;padding:13px;min-width:0}
+.listCol h3{margin:0 0 8px;font-size:19px}
+.listCol textarea{width:100%;height:270px;resize:vertical;border:1px solid rgba(0,0,0,.18);border-radius:12px;padding:11px;background:#fff;line-height:1.35}
+.listCol.g1{background:var(--g1);border-color:var(--g1b);color:var(--g1t)}
+.listCol.g2{background:var(--g2);border-color:var(--g2b);color:var(--g2t)}
+.listCol.g3{background:var(--g3);border-color:var(--g3b);color:var(--g3t)}
+.listCol.g4{background:var(--g4);border-color:var(--g4b);color:var(--g4t)}
+.listCol.g5{background:var(--g5);border-color:var(--g5b);color:var(--g5t)}
+.actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+#summary{font-weight:800;color:#475569;margin-right:auto}
+
+#boardScreen{display:none;position:fixed;inset:0;background:#f8fafc;overflow:hidden}
+#board{position:absolute;inset:0;touch-action:none;overflow:hidden}
+#topbar{position:absolute;z-index:9000;left:10px;right:10px;top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:rgba(255,255,255,.94);border:1px solid #dbe3ee;border-radius:15px;padding:8px;box-shadow:0 7px 22px rgba(15,23,42,.12)}
+#topbar button{padding:9px 12px}
+.card{position:absolute;display:flex;align-items:center;justify-content:center;text-align:center;
+  border:3px solid #64748b;border-radius:14px;background:#fff;color:#172033;
+  font-weight:850;line-height:1.08;padding:7px;user-select:none;-webkit-user-select:none;
+  touch-action:none;cursor:grab;box-shadow:0 3px 8px rgba(15,23,42,.14);overflow:hidden;word-break:break-word}
+.card.dragging{z-index:5000;cursor:grabbing;box-shadow:0 10px 28px rgba(15,23,42,.24)}
+.card.selected{outline:4px solid #f59e0b;outline-offset:2px}
+.card.reveal1{background:var(--g1);border-color:var(--g1b);color:var(--g1t)}
+.card.reveal2{background:var(--g2);border-color:var(--g2b);color:var(--g2t)}
+.card.reveal3{background:var(--g3);border-color:var(--g3b);color:var(--g3t)}
+.card.reveal4{background:var(--g4);border-color:var(--g4b);color:var(--g4t)}
+.card.reveal5{background:var(--g5);border-color:var(--g5b);color:var(--g5t)}
+#preview{position:absolute;z-index:4000;border:4px dashed #f59e0b;border-radius:15px;display:none;pointer-events:none}
+#toast{position:absolute;z-index:12000;left:50%;bottom:18px;transform:translateX(-50%);background:#111827;color:#fff;border-radius:999px;padding:10px 16px;font-weight:800;opacity:0;transition:.18s;pointer-events:none}
+#toast.show{opacity:1}
+@media(max-width:800px){#editor{padding:12px} h1{font-size:26px} .listCol textarea{height:200px}}
+</style>
+</head>
+<body>
+<section id="editor">
+  <h1>Magnetická slova</h1>
+  <div class="lead">Zadejte slova do 2–5 barevných seznamů. Na tabuli budou všechny kartičky stejné. Barvy se odhalí až po spojení slov z různých skupin.</div>
+
+  <div class="panel">
+    <div class="toprow">
+      <label for="groupCount">Počet seznamů:</label>
+      <select id="groupCount">
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+      </select>
+      <span style="color:#64748b">Slova oddělujte novým řádkem, čárkou nebo středníkem.</span>
+    </div>
+    <div id="listColumns"></div>
+  </div>
+
+  <div class="panel actions">
+    <span id="summary"></span>
+    <button id="saveProject">Uložit projekt</button>
+    <button id="loadProject">Načíst projekt</button>
+    <input id="projectFile" type="file" accept=".json,application/json" hidden>
+    <button id="clearAll" class="danger">Vymazat seznamy</button>
+    <button id="startBoard" class="green">Spustit přes celou obrazovku</button>
+  </div>
+</section>
+
+<section id="boardScreen">
+  <div id="board"></div>
+  <div id="topbar">
+    <button id="backEdit">← Upravit seznamy</button>
+    <button id="arrange">Rozmístit do mřížky</button>
+    <button id="detach" disabled>Rozpojit vybranou</button>
+    <button id="detachAll">Rozpojit vše</button>
+    <button id="saveBoard">Uložit projekt</button>
+    <button id="loadBoard">Načíst projekt</button>
+    <button id="fullscreen">Celá obrazovka</button>
+  </div>
+  <div id="preview"></div>
+  <div id="toast"></div>
+</section>
+
+<script>
+(()=> {
+const COLORS = [
+  {name:'Zelený seznam', cls:'g1'},
+  {name:'Modrý seznam', cls:'g2'},
+  {name:'Oranžový seznam', cls:'g3'},
+  {name:'Fialový seznam', cls:'g4'},
+  {name:'Růžový seznam', cls:'g5'}
+];
+
+const SAMPLE = [
+  ['okenní tabule','zátka','kniha','židle','hřebík','dlažební kostka','plechovka od fanty','svetr','cihla','pneumatika','kryt mobilu','rampouch','tričko','hračka vojáčka','vánoční odlitek','náušnice'],
+  ['kámen','guma','hlína','zlato','korek','bavlna','papír','dřevo','vlna','olovo','cín','železo','sklo','plast','hliník','led'],
+  [],[],[]
+];
+
+const editor=document.getElementById('editor');
+const boardScreen=document.getElementById('boardScreen');
+const board=document.getElementById('board');
+const listColumns=document.getElementById('listColumns');
+const groupCountSelect=document.getElementById('groupCount');
+const summary=document.getElementById('summary');
+const startBoard=document.getElementById('startBoard');
+const detach=document.getElementById('detach');
+const preview=document.getElementById('preview');
+const toastEl=document.getElementById('toast');
+const projectFile=document.getElementById('projectFile');
+
+let groupCount=2;
+let listData=SAMPLE.map(a=>a.slice());
+let words=[];
+let nextId=1;
+let cards=new Map();
+let groupSeq=1;
+let selectedId=null;
+let drag=null;
+let snap=null;
+let CARD_W=190, CARD_H=82, FONT_SIZE=28;
+const SAFE=82, GAP=14, MARGIN=18;
+
+function toast(t){
+  toastEl.textContent=t;
+  toastEl.classList.add('show');
+  clearTimeout(toast.timer);
+  toast.timer=setTimeout(()=>toastEl.classList.remove('show'),1500);
+}
+
+function parseList(s){
+  return String(s).split(/[\n,;]+/).map(x=>x.trim()).filter(Boolean);
+}
+function currentTextareasToData(){
+  for(let g=0;g<groupCount;g++){
+    const ta=document.getElementById('list_'+(g+1));
+    if(ta) listData[g]=parseList(ta.value);
+  }
+}
+function totalCount(){
+  return listData.slice(0,groupCount).reduce((n,a)=>n+a.length,0);
+}
+function updateSummary(){
+  currentTextareasToData();
+  const total=totalCount();
+  summary.textContent=total+' '+(total===1?'slovo':(total>=2&&total<=4?'slova':'slov'));
+  startBoard.disabled=total===0;
+}
+function renderLists(){
+  listColumns.innerHTML='';
+  listColumns.style.gridTemplateColumns='repeat('+groupCount+', minmax(230px,1fr))';
+  for(let g=1;g<=groupCount;g++){
+    const col=document.createElement('div');
+    col.className='listCol '+COLORS[g-1].cls;
+    const h=document.createElement('h3');
+    h.textContent=COLORS[g-1].name;
+    const ta=document.createElement('textarea');
+    ta.id='list_'+g;
+    ta.value=(listData[g-1]||[]).join('\n');
+    ta.placeholder='Sem napište slova pro '+COLORS[g-1].name.toLowerCase()+'…';
+    ta.addEventListener('input',updateSummary);
+    col.append(h,ta);
+    listColumns.appendChild(col);
+  }
+  updateSummary();
+}
+groupCountSelect.addEventListener('change',()=>{
+  currentTextareasToData();
+  groupCount=Number(groupCountSelect.value);
+  renderLists();
+});
+
+function buildWordsFromLists(){
+  currentTextareasToData();
+  words=[];
+  nextId=1;
+  for(let g=1;g<=groupCount;g++){
+    for(const text of listData[g-1]){
+      words.push({id:nextId++, text, sourceGroup:g});
+    }
+  }
+}
+
+function members(g){ return [...cards.values()].filter(c=>c.group===g); }
+function groupHasDifferentSources(g){
+  const s=new Set(members(g).map(c=>c.sourceGroup));
+  return s.size>=2;
+}
+
+function bestGrid(n){
+  const W=Math.max(100,board.clientWidth-2*MARGIN);
+  const H=Math.max(100,board.clientHeight-SAFE-2*MARGIN);
+  let best=null;
+  for(let cols=1;cols<=n;cols++){
+    const rows=Math.ceil(n/cols);
+    const maxW=(W-GAP*(cols-1))/cols;
+    const maxH=(H-GAP*(rows-1))/rows;
+    if(maxW<=0||maxH<=0)continue;
+    const w=Math.min(210,maxW), h=Math.min(90,maxH);
+    const readability=Math.min(w/190,h/82);
+    const aspectPenalty=Math.abs((cols/rows)-(board.clientWidth/Math.max(1,board.clientHeight-SAFE)))*.03;
+    const score=readability-aspectPenalty;
+    if(!best||score>best.score)best={cols,rows,maxW,maxH,score};
+  }
+  if(!best) best={cols:1,rows:n,maxW:W,maxH:H/n};
+  CARD_W=Math.max(48,Math.min(210,Math.floor(best.maxW)));
+  CARD_H=Math.max(34,Math.min(90,Math.floor(best.maxH)));
+  FONT_SIZE=Math.max(11,Math.min(30,Math.floor(Math.min(CARD_H*.36,CARD_W*.14))));
+  return best;
+}
+
+function renderBoard(){
+  board.innerHTML='';
+  for(const c of cards.values()){
+    const e=document.createElement('div');
+    e.className='card';
+    if(groupHasDifferentSources(c.group)) e.classList.add('reveal'+c.sourceGroup);
+    if(c.id===selectedId)e.classList.add('selected');
+    e.dataset.id=c.id;
+    e.style.left=c.x+'px';
+    e.style.top=c.y+'px';
+    e.style.width=CARD_W+'px';
+    e.style.height=CARD_H+'px';
+    e.style.fontSize=FONT_SIZE+'px';
+    e.textContent=c.text;
+    e.onpointerdown=down;
+    board.appendChild(e);
+  }
+}
+
+function arrangeGrid(resetGroups=false){
+  if(!cards.size)return;
+  if(resetGroups) for(const c of cards.values()) c.group=groupSeq++;
+  const grid=bestGrid(cards.size);
+  const cols=grid.cols, rows=grid.rows;
+  const totalW=cols*CARD_W+(cols-1)*GAP;
+  const totalH=rows*CARD_H+(rows-1)*GAP;
+  const startX=Math.max(MARGIN,(board.clientWidth-totalW)/2);
+  const freeH=board.clientHeight-SAFE;
+  const startY=SAFE+Math.max(MARGIN,(freeH-totalH)/2);
+  [...cards.values()].forEach((c,i)=>{
+    c.x=Math.round(startX+(i%cols)*(CARD_W+GAP));
+    c.y=Math.round(startY+Math.floor(i/cols)*(CARD_H+GAP));
+  });
+  selectedId=null;
+  detach.disabled=true;
+  renderBoard();
+}
+
+function newBoard(){
+  buildWordsFromLists();
+  cards.clear();
+  groupSeq=1;
+  for(const w of words) cards.set(w.id,{...w,x:0,y:SAFE,group:groupSeq++});
+  arrangeGrid(false);
+}
+
+function renderSelection(){
+  [...board.children].forEach(e=>e.classList.toggle('selected',+e.dataset.id===selectedId));
+}
+
+function down(e){
+  e.preventDefault();
+  const id=+e.currentTarget.dataset.id;
+  const c=cards.get(id);
+  selectedId=id;
+  detach.disabled=members(c.group).length<=1;
+  const mm=members(c.group);
+  drag={pid:e.pointerId,sx:e.clientX,sy:e.clientY,group:c.group,start:mm.map(x=>({id:x.id,x:x.x,y:x.y}))};
+  try{e.currentTarget.setPointerCapture(e.pointerId)}catch(_){}
+  mm.forEach(x=>{
+    const el=board.querySelector('[data-id="'+x.id+'"]');
+    if(el)el.classList.add('dragging');
+  });
+  window.addEventListener('pointermove',move,{passive:false});
+  window.addEventListener('pointerup',up,{once:true});
+  renderSelection();
+}
+
+function move(e){
+  if(!drag||e.pointerId!==drag.pid)return;
+  e.preventDefault();
+  let dx=e.clientX-drag.sx, dy=e.clientY-drag.sy;
+  const minX=Math.min(...drag.start.map(s=>s.x));
+  const maxX=Math.max(...drag.start.map(s=>s.x+CARD_W));
+  const minY=Math.min(...drag.start.map(s=>s.y));
+  const maxY=Math.max(...drag.start.map(s=>s.y+CARD_H));
+  if(minX+dx<0)dx=-minX;
+  if(maxX+dx>board.clientWidth)dx=board.clientWidth-maxX;
+  if(minY+dy<SAFE)dy=SAFE-minY;
+  if(maxY+dy>board.clientHeight)dy=board.clientHeight-maxY;
+  drag.start.forEach(s=>{
+    const c=cards.get(s.id);
+    c.x=s.x+dx; c.y=s.y+dy;
+    const el=board.querySelector('[data-id="'+c.id+'"]');
+    if(el){el.style.left=c.x+'px';el.style.top=c.y+'px'}
+  });
+  findSnap();
+}
+
+function findSnap(){
+  snap=null;
+  preview.style.display='none';
+  if(!drag)return;
+  const ids=new Set(members(drag.group).map(c=>c.id));
+  const mov=[...ids].map(id=>cards.get(id));
+  const fix=[...cards.values()].filter(c=>!ids.has(c.id));
+  const required=(CARD_W*CARD_H)/3;
+  let best=null;
+
+  function area(a,b){
+    const l=Math.max(a.x,b.x), r=Math.min(a.x+CARD_W,b.x+CARD_W);
+    const t=Math.max(a.y,b.y), bt=Math.min(a.y+CARD_H,b.y+CARD_H);
+    return Math.max(0,r-l)*Math.max(0,bt-t);
+  }
+
+  for(const a of mov){
+    for(const b of fix){
+      const ar=area(a,b);
+      if(ar<=required)continue;
+      const acx=a.x+CARD_W/2, acy=a.y+CARD_H/2;
+      const bcx=b.x+CARD_W/2, bcy=b.y+CARD_H/2;
+      const dx=acx-bcx, dy=acy-bcy;
+      let q;
+      if(Math.abs(dx/CARD_W)>=Math.abs(dy/CARD_H)){
+        q=dx<0 ? {dx:b.x-CARD_W-a.x,dy:b.y-a.y} : {dx:b.x+CARD_W-a.x,dy:b.y-a.y};
+      }else{
+        q=dy<0 ? {dx:b.x-a.x,dy:b.y-CARD_H-a.y} : {dx:b.x-a.x,dy:b.y+CARD_H-a.y};
+      }
+      if(!best||ar>best.area)best={...q,area:ar,target:b.group};
+    }
+  }
+
+  if(best){
+    snap=best;
+    const xs=[],ys=[];
+    for(const c of mov){
+      xs.push(c.x+best.dx,c.x+best.dx+CARD_W);
+      ys.push(c.y+best.dy,c.y+best.dy+CARD_H);
+    }
+    preview.style.left=Math.min(...xs)+'px';
+    preview.style.top=Math.min(...ys)+'px';
+    preview.style.width=(Math.max(...xs)-Math.min(...xs))+'px';
+    preview.style.height=(Math.max(...ys)-Math.min(...ys))+'px';
+    preview.style.display='block';
+  }
+}
+
+function up(){
+  window.removeEventListener('pointermove',move);
+  if(drag)findSnap();
+  if(snap){
+    const oldGroup=drag.group;
+    members(oldGroup).forEach(c=>{
+      c.x+=snap.dx;
+      c.y+=snap.dy;
+      c.group=snap.target;
+    });
+    toast('Kartičky se spojily.');
+  }
+  drag=null;snap=null;preview.style.display='none';
+  renderBoard();
+}
+
+async function enterBoard(){
+  buildWordsFromLists();
+  if(!words.length){alert('Nejdříve zadejte alespoň jedno slovo.');return}
+  editor.style.display='none';
+  boardScreen.style.display='block';
+  try{
+    if(!document.fullscreenElement && document.documentElement.requestFullscreen){
+      await document.documentElement.requestFullscreen();
+    }
+  }catch(_){}
+  requestAnimationFrame(()=>requestAnimationFrame(newBoard));
+}
+
+function projectData(){
+  currentTextareasToData();
+  return {
+    version:3,
+    groupCount,
+    lists:listData.slice(0,groupCount),
+    cardSize:{w:CARD_W,h:CARD_H,font:FONT_SIZE},
+    cards:[...cards.values()].map(c=>({id:c.id,text:c.text,sourceGroup:c.sourceGroup,x:c.x,y:c.y,group:c.group})),
+    groupSeq
+  };
+}
+function saveProject(){
+  const blob=new Blob([JSON.stringify(projectData(),null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const d=new Date(), pad=n=>String(n).padStart(2,'0');
+  a.href=url;
+  a.download='magneticka_slova_'+d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'_'+pad(d.getHours())+'-'+pad(d.getMinutes())+'.json';
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  if(boardScreen.style.display==='block')toast('Projekt uložen.');
+}
+function loadProject(file){
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const d=JSON.parse(r.result);
+      groupCount=Math.max(2,Math.min(5,Number(d.groupCount)||2));
+      groupCountSelect.value=String(groupCount);
+      listData=[[],[],[],[],[]];
+      if(Array.isArray(d.lists)){
+        for(let i=0;i<Math.min(5,d.lists.length);i++) listData[i]=Array.isArray(d.lists[i])?d.lists[i].map(String):[];
+      }else if(Array.isArray(d.words)){
+        for(const w of d.words){
+          const g=Math.max(1,Math.min(5,Number(w.sourceGroup)||1));
+          listData[g-1].push(String(w.text));
+        }
+      }
+      renderLists();
+
+      if(Array.isArray(d.cards)&&d.cards.length){
+        cards.clear();
+        if(d.cardSize){
+          CARD_W=Number(d.cardSize.w)||CARD_W;
+          CARD_H=Number(d.cardSize.h)||CARD_H;
+          FONT_SIZE=Number(d.cardSize.font)||FONT_SIZE;
+        }
+        groupSeq=Number(d.groupSeq)||1;
+        for(const c of d.cards){
+          cards.set(Number(c.id),{
+            id:Number(c.id),text:String(c.text),
+            sourceGroup:Math.max(1,Math.min(groupCount,Number(c.sourceGroup)||1)),
+            x:Number(c.x)||0,y:Number(c.y)||SAFE,group:Number(c.group)||groupSeq++
+          });
+        }
+        editor.style.display='none';
+        boardScreen.style.display='block';
+        requestAnimationFrame(()=>renderBoard());
+      }else{
+        editor.style.display='block';
+        boardScreen.style.display='none';
+      }
+    }catch(err){
+      alert('Soubor se nepodařilo načíst.');
+    }
+  };
+  r.readAsText(file,'utf-8');
+}
+
+document.getElementById('clearAll').onclick=()=>{
+  if(confirm('Vymazat všechny seznamy?')){
+    listData=[[],[],[],[],[]];
+    renderLists();
+  }
+};
+startBoard.onclick=enterBoard;
+document.getElementById('backEdit').onclick=()=>{
+  boardScreen.style.display='none';
+  editor.style.display='block';
+  if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});
+  renderLists();
+};
+document.getElementById('arrange').onclick=()=>{arrangeGrid(true);toast('Slova jsou znovu rozmístěna.')};
+detach.onclick=()=>{
+  if(selectedId==null)return;
+  const c=cards.get(selectedId);
+  if(!c||members(c.group).length<=1)return;
+  c.group=groupSeq++;
+  c.x=Math.min(board.clientWidth-CARD_W,c.x+25);
+  c.y=Math.min(board.clientHeight-CARD_H,Math.max(SAFE,c.y+25));
+  detach.disabled=true;renderBoard();toast('Kartička rozpojena.');
+};
+document.getElementById('detachAll').onclick=()=>{
+  for(const c of cards.values())c.group=groupSeq++;
+  selectedId=null;detach.disabled=true;renderBoard();toast('Všechny kartičky jsou rozpojené.');
+};
+document.getElementById('fullscreen').onclick=async()=>{
+  try{
+    if(document.fullscreenElement)await document.exitFullscreen();
+    else await document.documentElement.requestFullscreen();
+  }catch(_){toast('Prohlížeč celou obrazovku nepovolil.')}
+};
+document.getElementById('saveProject').onclick=saveProject;
+document.getElementById('saveBoard').onclick=saveProject;
+document.getElementById('loadProject').onclick=()=>projectFile.click();
+document.getElementById('loadBoard').onclick=()=>projectFile.click();
+projectFile.onchange=e=>{
+  const f=e.target.files&&e.target.files[0];
+  if(f)loadProject(f);
+  e.target.value='';
+};
+window.addEventListener('resize',()=>{if(boardScreen.style.display==='block'&&cards.size)arrangeGrid(false)});
+
+renderLists();
+})();
+</script>
+</body>
+</html>
