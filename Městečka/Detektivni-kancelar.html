@@ -14,7 +14,7 @@
 .error-types{min-width:0}.error-types legend{font-weight:750}.type{display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer}.type:has(:checked){background:#e8f4fc}
 #selection-feedback:empty,#type-feedback:empty,#result-feedback:empty{display:none}.answer-fields .field:first-child{margin-top:0}
 .result-fraction{display:grid;gap:4px;width:8rem;text-align:center}.result-fraction input{text-align:center;font-size:1.25rem;font-variant-numeric:tabular-nums}.result-fraction-line{border-top:2px solid currentColor}
-.repair-step{border:1px solid #d5e2d5;border-radius:10px;margin:0 0 14px;padding:10px}.repair-step legend{font-weight:750}.repair-equation{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.repair-step .bad:empty{display:none}
+.repair-row,.repair-equation{display:flex;gap:10px;align-items:center}.repair-row{overflow-x:auto;padding:5px;font-size:clamp(1.15rem,2.5vw,1.65rem)}.repair-row>*{flex:none}.repair-row .result-fraction{width:clamp(3.6rem,9vw,6rem)}.repair-feedback:empty{display:none}
 </style></head><body><main class="layout" id="root"></main><script>
 'use strict';
 const root=document.querySelector('#root');
@@ -167,11 +167,11 @@ function repairSteps(task){
 function stepFields(task){
  return repairSteps(task).map((step,i)=>{
    const fractions=step.match(/\[\[\d+\/\d+\]\]/g);
-   return '<fieldset class="repair-step"><legend>Opravený krok '+(firstBadIndex(task)+i)+'</legend><div class="repair-equation">'+
+   return '<span class="eq" aria-hidden="true">=</span><div class="repair-equation" role="group" aria-label="Opravený krok '+(firstBadIndex(task)+i)+'">'+
      fractions.map((_,j)=>{
        const key=i+'-'+j;
        return '<div class="result-fraction"><input type="text" inputmode="numeric" maxlength="30" aria-label="Čitatel zlomku '+(j+1)+'" data-repair="'+key+'-top"><span class="result-fraction-line" aria-hidden="true"></span><input type="text" inputmode="numeric" maxlength="30" aria-label="Jmenovatel zlomku '+(j+1)+'" data-repair="'+key+'-bottom"></div>';
-     }).join('<span aria-hidden="true">+</span>')+'</div><p class="bad" id="repair-feedback-'+i+'" role="status"></p></fieldset>';
+     }).join('<span aria-hidden="true">+</span>')+'</div>';
  }).join('');
 }
 function repairMatches(step,i){
@@ -185,9 +185,14 @@ function resultFields(task){
  const hint=fractionResult?'Doplň čitatele a jmenovatele.':'Zadej hodnotu v uvedené jednotce.';
  const inputs=fractionResult
    ?'<div class="result-fraction"><input id="fix" '+attributes+' inputmode="numeric" maxlength="30" aria-label="Čitatel"><span class="result-fraction-line" aria-hidden="true"></span><input id="fix-denominator" '+attributes+' inputmode="numeric" maxlength="30" aria-label="Jmenovatel"></div>'
-   :'<input id="fix" '+attributes+' maxlength="80" aria-labelledby="result-title">';
- return '<h3 class="field" id="result-title">Správný výsledek'+(task.targetUnit?' v '+task.targetUnit:'')+'</h3>'+
-   inputs+'<p class="minor" id="result-hint">'+hint+'</p><p class="bad" id="result-feedback" role="status"></p>';
+   :'<input id="fix" '+attributes+' maxlength="80" aria-label="Správný výsledek'+(task.targetUnit?' v '+task.targetUnit:'')+'">';
+ const steps=repairSteps(task);
+ const prefix=task.steps.slice(0,firstBadIndex(task)).map(value=>'<span class="math">'+math(value)+'</span>').join('<span class="eq" aria-hidden="true">=</span>');
+ return '<h3 class="field" id="result-title">'+(steps.length?'Opravený postup':'Správný výsledek')+(task.targetUnit?' v '+task.targetUnit:'')+'</h3>'+
+   '<div class="repair-row">'+prefix+stepFields(task)+'<span class="eq" aria-hidden="true">=</span><div role="group" aria-label="Správný výsledek">'+inputs+'</div></div>'+
+   '<p class="minor" id="result-hint">'+hint+'</p>'+
+   steps.map((_,i)=>'<p class="bad repair-feedback" id="repair-feedback-'+i+'" role="status"></p>').join('')+
+   '<p class="bad" id="result-feedback" role="status"></p>';
 }
 function render(){
  const isGood = selected==='correct';
@@ -207,7 +212,7 @@ function render(){
      '<label class="type"><input type="radio" name="error-type" data-type="'+key+'" '+(choice===key?'checked':'')+'> '+label+'</label>'
    ).join('')+'</div><p class="minor" id="type-feedback" role="status">'+(choice&&!mayCorrect?'Zkus jinou možnost.':'')+'</p></fieldset>':''}
    ${isGood||mayCorrect?
-     '<section class="box answer-fields">'+(mayCorrect?stepFields(current)+resultFields(current):'')+
+     '<section class="box answer-fields">'+(mayCorrect?resultFields(current):'')+
      '<div class="controls"><button class="primary" id="submit" disabled>Odevzdat odpověď</button></div></section>':''}
    <div id="feedback"></div>`;
  root.querySelector('#back').onclick=menu;
@@ -287,7 +292,7 @@ function submit(){
  const repaired=current.category?repairSteps(current):[];
  const wrongStep=repaired.findIndex((step,i)=>!repairMatches(step,i));
  if(wrongStep!==-1){
-   root.querySelector('#repair-feedback-'+wrongStep).textContent='Zkontroluj čitatele a jmenovatele v tomto kroku.';
+   root.querySelector('#repair-feedback-'+wrongStep).textContent='Zkontroluj čitatele a jmenovatele v kroku '+(firstBadIndex(current)+wrongStep)+'.';
    root.querySelector('[data-repair="'+wrongStep+'-0-top"]').focus();
    return;
  }
