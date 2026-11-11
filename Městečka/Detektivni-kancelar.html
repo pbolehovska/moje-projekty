@@ -13,6 +13,7 @@
 .equation .step[aria-pressed=true] .n{border-color:currentColor}
 .error-types{min-width:0}.error-types legend{font-weight:750}.type{display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer}.type:has(:checked){background:#e8f4fc}
 #selection-feedback:empty,#type-feedback:empty,#result-feedback:empty{display:none}.answer-fields .field:first-child{margin-top:0}
+.result-fraction{display:grid;gap:4px;width:8rem;text-align:center}.result-fraction input{text-align:center;font-size:1.25rem;font-variant-numeric:tabular-nums}.result-fraction-line{border-top:2px solid currentColor}
 </style></head><body><main class="layout" id="root"></main><script>
 'use strict';
 const root=document.querySelector('#root');
@@ -157,6 +158,16 @@ function correctResult(task, input){
  const a=resultValue(given), b=resultValue(expected);
  return Boolean(a&&b&&a[0]*b[1]===b[0]*a[1]);
 }
+function resultFields(task){
+ const attributes='type="text" autocomplete="off" aria-describedby="result-hint result-feedback"';
+ const fractionResult=task.correction.startsWith('[[');
+ const hint=fractionResult?'Doplň čitatele a jmenovatele.':'Zadej hodnotu v uvedené jednotce.';
+ const inputs=fractionResult
+   ?'<div class="result-fraction"><input id="fix" '+attributes+' inputmode="numeric" maxlength="30" aria-label="Čitatel"><span class="result-fraction-line" aria-hidden="true"></span><input id="fix-denominator" '+attributes+' inputmode="numeric" maxlength="30" aria-label="Jmenovatel"></div>'
+   :'<input id="fix" '+attributes+' maxlength="80" aria-labelledby="result-title">';
+ return '<h3 class="field" id="result-title">Správný výsledek'+(task.targetUnit?' v '+task.targetUnit:'')+'</h3>'+
+   inputs+'<p class="minor" id="result-hint">'+hint+'</p><p class="bad" id="result-feedback" role="status"></p>';
+}
 function render(){
  const isGood = selected==='correct';
  const hasError = current.category && selected===String(firstBadIndex(current));
@@ -175,7 +186,7 @@ function render(){
      '<label class="type"><input type="radio" name="error-type" data-type="'+key+'" '+(choice===key?'checked':'')+'> '+label+'</label>'
    ).join('')+'</div><p class="minor" id="type-feedback" role="status">'+(choice&&!mayCorrect?'Zkus jinou možnost.':'')+'</p></fieldset>':''}
    ${isGood||mayCorrect?
-     '<section class="box answer-fields">'+(mayCorrect?'<label class="field" for="fix">Správný výsledek'+(current.targetUnit?' v '+current.targetUnit:'')+'</label><input id="fix" type="text" autocomplete="off" maxlength="80" aria-describedby="result-hint result-feedback"><p class="minor" id="result-hint">'+(current.targetUnit?'Zadej hodnotu v uvedené jednotce.':'Například 3/4, 0,75, 2 1/3 nebo (1/2)/(3/4).')+'</p><p class="bad" id="result-feedback" role="status"></p>':'')+
+     '<section class="box answer-fields">'+(mayCorrect?resultFields(current):'')+
      '<div class="controls"><button class="primary" id="submit" disabled>Odevzdat odpověď</button></div></section>':''}
    <div id="feedback"></div>`;
  root.querySelector('#back').onclick=menu;
@@ -204,16 +215,33 @@ function render(){
    render();
    root.querySelector(choice===current.category?'#fix':'[data-type="'+choice+'"]')?.focus({preventScroll:true});
  });
- const inp=root.querySelector('#fix'), btn=root.querySelector('#submit');
+ const inp=root.querySelector('#fix'), denominator=root.querySelector('#fix-denominator'), btn=root.querySelector('#submit');
  if(!btn) return;
  function updateSubmit(){
-   btn.disabled=!(isGood||fix.trim());
+   const complete=denominator
+     ? /^-?\d+$/.test(inp.value.trim())&&/^\d+$/.test(denominator.value.trim())&&/[1-9]/.test(denominator.value)
+     : fix.trim();
+   btn.disabled=!(isGood||complete);
  }
 
 
  if(inp){
-   inp.value=fix;
-   inp.oninput=()=>{fix=inp.value;inp.removeAttribute('aria-invalid');root.querySelector('#result-feedback').textContent='';updateSubmit();};
+   if(denominator){
+     const [top,bottom='']=fix.split('/');
+     inp.value=top;
+     denominator.value=bottom;
+   }else{
+     inp.value=fix;
+   }
+   const readResult=()=>{
+     fix=denominator?inp.value.trim()+'/'+denominator.value.trim():inp.value;
+     inp.removeAttribute('aria-invalid');
+     denominator?.removeAttribute('aria-invalid');
+     root.querySelector('#result-feedback').textContent='';
+     updateSubmit();
+   };
+   inp.oninput=readResult;
+   if(denominator) denominator.oninput=readResult;
  }
  updateSubmit();
  btn.onclick=submit;
@@ -222,10 +250,11 @@ function submit(){
  if(submitted)return;
  const located=(current.category===null?selected==='correct':selected===String(firstBadIndex(current)));
  const typed=(!current.category&&selected==='correct')||(current.category&&choice===current.category);
- if(!located||!typed) return;
+ if(!located||!typed||root.querySelector('#submit').disabled) return;
  if(current.category&&!correctResult(current,fix)){
    const input=root.querySelector('#fix');
    input.setAttribute('aria-invalid','true');
+   root.querySelector('#fix-denominator')?.setAttribute('aria-invalid','true');
    root.querySelector('#result-feedback').textContent='Výsledek nesouhlasí. Zkontroluj hodnotu a zkus to znovu.';
    input.focus();
    return;
@@ -238,7 +267,7 @@ function submit(){
  const fb=root.querySelector('#feedback');
  fb.innerHTML=(mode==='test'?'<div class="notice">Odpověď uložena. Vyhodnocení se zobrazí po dokončení všech 15 případů.</div>':'<div class="notice '+(correct?'':'warn')+'"><b>'+(correct?'Místo a typ jsou správně.':'Tvoje označení není úplně správně.')+'</b><p>'+(current.category?'První chybný krok je číslo '+(firstBadIndex(current))+'. Typ: '+labels[current.category]+'.':'Celý postup je správný.')+'</p><p>'+current.explanation+'</p>'+(current.category?'<p>Správný výsledek: <b>'+math(current.correction)+'</b></p>':'')+'<p class="minor">Svůj výsledek můžeš porovnat se vzorem.</p></div>');
  const next=document.createElement('button');next.className='primary';next.textContent=index===14?'Zobrazit vyhodnocení':'Další případ →';next.onclick=()=>{index++;show()};fb.append(next);
- root.querySelectorAll('.step,[data-type],#correct,#fix,#submit').forEach(x=>x.disabled=true);
+ root.querySelectorAll('.step,[data-type],#correct,#fix,#fix-denominator,#submit').forEach(x=>x.disabled=true);
  if(mode==='student'&&countErrors>=5){const note=document.createElement('p');note.className='notice warn';note.textContent='Pět nesprávně označených případů. Podle pravidel režimu ŽÁK můžeš začít nové kolo.';fb.append(note);}
 }
 function firstBadIndex(t){
