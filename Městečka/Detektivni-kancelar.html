@@ -26,7 +26,7 @@ function generate(level){
  for(let i=0;i<4;i++){
    let d=[12,16,18,20][i]+(scale-1)*4,n=5+i*2,m=3+i*2,tot=n+m,wrong=tot+(i===3?0:1);
    let result=reduce(tot,d),last=fraction(result[0],result[1]);
-   out.push(mk([fraction(n,d)+' + '+fraction(m,d),fraction(wrong,d),last],i===3?null:'add',fraction(tot,d),'Při sčítání stejných jmenovatelů sečteme pouze čitatele: '+n+' + '+m+' = '+tot+'.'));
+   out.push(mk([fraction(n,d)+' + '+fraction(m,d),fraction(wrong,d),fraction(i===3?result[0]:reduce(wrong,d)[0],i===3?result[1]:reduce(wrong,d)[1])],i===3?null:'add',fraction(tot,d),'Při sčítání stejných jmenovatelů sečteme pouze čitatele: '+n+' + '+m+' = '+tot+'.'));
  }
  for(let i=0;i<4;i++){
    let d=[6,8,10,12][i],a=[2,3,3,5][i],b=[1,3,1,5][i],big=d*2;
