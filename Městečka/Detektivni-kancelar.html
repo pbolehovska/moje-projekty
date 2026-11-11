@@ -330,7 +330,7 @@ function resultFields(task){
 }
 const toolState={calculator:false,keypad:false,left:'',right:'',operation:'+',output:''};
 function boardTools(){
- const keys=['7','8','9','4','5','6','1','2','3','−','0',',','/','␣','⌫','Další pole'];
+ const keys=['1','2','3','4','5','6','7','8','9','0','−',',','/','␣','⌫','Další pole'];
  return '<div class="board-tools">'+
    '<details id="calculator-tool" '+(toolState.calculator?'open':'')+'><summary aria-label="Kalkulačka" title="Kalkulačka"><span aria-hidden="true">🧮</span></summary>'+
      '<div class="tool-panel"><h3>Kalkulačka</h3><form id="calculator-form" class="calculator-form">'+
