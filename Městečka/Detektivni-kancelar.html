@@ -21,7 +21,7 @@ function generate(level){
  const out=[];const scale={easy:1,medium:2,hard:3}[level];
  for(let i=0;i<4;i++){
    let w=2+scale+i,d=[4,5,8,6][i],n=[3,2,5,5][i],a=w*d+n,incorrect=a+(i%2?2:1);
-   out.push(mk([mixed(w,n,d),fraction(i===3?a:incorrect,d),fraction(a,d)],i===3?null:'convert',fraction(a,d),'Při převodu na nepravý zlomek vynásobíme celou část jmenovatelem a přičteme čitatele. '+w+' × '+d+' + '+n+' = '+a+'.'));
+   out.push(mk([mixed(w,n,d),fraction(i===3?a:incorrect,d),fraction(i===0||i===3?a:incorrect,d)],i===3?null:'convert',fraction(a,d),'Při převodu na nepravý zlomek vynásobíme celou část jmenovatelem a přičteme čitatele. '+w+' × '+d+' + '+n+' = '+a+'.'));
  }
  for(let i=0;i<4;i++){
    let d=[12,16,18,20][i]+(scale-1)*4,n=5+i*2,m=3+i*2,tot=n+m,wrong=tot+(i===3?0:1);
