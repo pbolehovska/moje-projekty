@@ -36,7 +36,7 @@ function generate(level){
  for(let i=0;i<4;i++){
    const nums=[125,375,625,875],n=nums[i]+(scale-1)*100,raw=n/1000;
    let r=reduce(n,1000),wrong=n+(i===3?0:25);
-   out.push(mk([decimal(raw),fraction(wrong,1000),fraction(r[0],r[1])],i===3?null:'decimal',fraction(n,1000),'Číslo se třemi desetinnými místy se zapíše jako počet tisícin: '+n+'/1000. Pak se zlomek zkrátí.'));
+   out.push(mk([decimal(raw),fraction(wrong,1000),fraction(i===3?r[0]:reduce(wrong,1000)[0],i===3?r[1]:reduce(wrong,1000)[1])],i===3?null:'decimal',fraction(n,1000),'Číslo se třemi desetinnými místy se zapíše jako počet tisícin: '+n+'/1000. Pak se zlomek zkrátí.'));
  }
  for(let i=0;i<4;i++){
    let num=[3,5,7,9][i],den=10,base=[100,60,100,100][i],unit=[['m','cm'],['h','min'],['m²','dm²'],['m','cm']][i],proper=(num*base/den),wrong=proper+(i===3?0:(i+1)*2);
@@ -50,7 +50,7 @@ function generate(level){
      out.push(mk([fraction(x,y),fraction(n+1,d),fraction(r[0],r[1])],'reduce',fraction(n,d),'Při krácení dělíme čitatele i jmenovatele stejným číslem. Prostřední zlomek nemá stejnou hodnotu.'));
    }else if(i===1){
      let sum=(5+scale)*10;
-     out.push(mk([fraction(sum,100),fraction(sum+10,100),fraction(reduce(sum,100)[0],reduce(sum,100)[1])],'reduce',fraction(sum,100),'Prostřední zlomek nemá stejnou hodnotu jako první, i když poslední výsledek odpovídá zadání.'));
+     out.push(mk([fraction(sum,100),fraction(sum+10,100),fraction(reduce(sum+10,100)[0],reduce(sum+10,100)[1])],'reduce',fraction(sum,100),'Prostřední zlomek nemá stejnou hodnotu jako první, i když poslední výsledek odpovídá zadání.'));
    }else if(i===2){
      out.push(mk([fraction(x,y),fraction(n-1,d),fraction(n-1,d)],'reduce',fraction(n,d),'Čitatele a jmenovatele je třeba dělit stejným číslem. Prostřední hodnota není původní zlomek.'));
    }else{
