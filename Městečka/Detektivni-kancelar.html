@@ -15,6 +15,8 @@
 #selection-feedback:empty,#type-feedback:empty,#result-feedback:empty{display:none}.answer-fields .field:first-child{margin-top:0}
 .result-fraction{display:grid;gap:4px;width:8rem;text-align:center}.result-fraction input{text-align:center;font-size:1.25rem;font-variant-numeric:tabular-nums}.result-fraction-line{border-top:2px solid currentColor}
 .repair-row,.repair-equation{display:flex;gap:10px;align-items:center}.repair-row{overflow-x:auto;padding:5px;font-size:clamp(1.15rem,2.5vw,1.65rem)}.repair-row>*{flex:none}.repair-row .result-fraction{width:clamp(3.6rem,9vw,6rem)}.repair-feedback:empty{display:none}
+.result-group{display:flex;gap:8px;align-items:center}.result-group #fix-whole{width:4rem;text-align:center}.equation.long-equation{flex-wrap:nowrap;overflow-x:auto}.long-equation .equation-part{flex:none}
+.board-tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:12px;margin-top:14px}.board-tools summary{display:inline-grid;place-items:center;list-style:none;min-width:50px;min-height:46px;background:white;border:1px solid #aebfb1;border-radius:10px;font-size:24px;cursor:pointer}.board-tools summary::-webkit-details-marker{display:none}.board-tools details[open] summary{background:#e5eee2}.tool-panel{background:white;border:1px solid #d5e2d5;border-radius:12px;margin-top:6px;padding:12px}.tool-panel h3{margin:0 0 8px;font-size:1rem}.calculator-form{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.calculator-form input{width:7rem;max-width:100%}.calculator-form select{font:inherit;padding:8px}.calculator-form output{flex-basis:100%;font-weight:750;overflow-wrap:anywhere}.board-keypad{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}.board-keypad button{padding:5px;min-height:46px}.board-keypad button:last-child{grid-column:span 2}.tool-panel .minor:empty{display:none}@media(max-width:680px){.board-tools{grid-template-columns:1fr}}
 </style></head><body><main class="layout" id="root"></main><script>
 'use strict';
 const root=document.querySelector('#root');
@@ -38,8 +40,8 @@ const instructions = {
 const assignmentMath = task => math(task.steps[0] + (task.targetUnit ? ' → ' + task.targetUnit : ''));
 const decimal=x=>String(x).replace('.',',');
 const mk=(steps,category,correction,explanation,intermediate=[])=>({steps,category,correction,explanation,intermediate});
-function generate(level){
- const out=[];const scale={easy:1,medium:2,hard:3}[level];
+function generate(level, variant){
+ const out=[];const scale={easy:1,medium:2}[level]+variant*2;
  for(let i=0;i<4;i++){
    let w=2+scale+i,d=[4,5,8,6][i],n=[3,2,5,5][i],a=w*d+n,incorrect=a+(i%2?2:1);
    out.push(mk([mixed(w,n,d),fraction(i===3?a:incorrect,d),fraction(i===0||i===3?a:incorrect,d)],i===3?null:'convert',fraction(a,d),'Při převodu na nepravý zlomek vynásobíme celou část jmenovatelem a přičteme čitatele. '+w+' × '+d+' + '+n+' = '+a+'.',i===0?[fraction(a,d)]:[]));
@@ -50,7 +52,7 @@ function generate(level){
    out.push(mk([fraction(n,d)+' + '+fraction(m,d),fraction(wrong,d),fraction(i===3?result[0]:reduce(wrong,d)[0],i===3?result[1]:reduce(wrong,d)[1])],i===3?null:'add',fraction(...result),'Při sčítání stejných jmenovatelů sečteme pouze čitatele: '+n+' + '+m+' = '+tot+'.',[fraction(tot,d)]));
  }
  for(let i=0;i<4;i++){
-   let d=[6,8,10,12][i],a=[2,3,3,5][i],b=[1,3,1,5][i],big=d*2;
+   let d=[6,8,10,12][i]+variant*2,a=[2,3,3,5][i]+variant,b=[1,3,1,5][i]+variant,big=d*2;
    let correctA=a*2, badA=correctA+(i===3?0:1),sum=badA+b,rr=reduce(sum,big);
    out.push(mk([fraction(a,d)+' + '+fraction(b,big),fraction(badA,big)+' + '+fraction(b,big),fraction(sum,big),fraction(rr[0],rr[1])],i===3?null:'expand',fraction(...reduce(correctA+b,big)),'Při rozšiřování na společného jmenovatele musí být čitatel i jmenovatel násobeny stejným číslem. Správně '+a+' × 2 = '+correctA+'.',[fraction(correctA,big)+' + '+fraction(b,big),fraction(correctA+b,big)]));
  }
@@ -60,7 +62,7 @@ function generate(level){
    out.push(mk([decimal(raw),fraction(wrong,1000),fraction(i===3?r[0]:reduce(wrong,1000)[0],i===3?r[1]:reduce(wrong,1000)[1])],i===3?null:'decimal',fraction(...r),'Číslo se třemi desetinnými místy se zapíše jako počet tisícin: '+n+'/1000. Pak se zlomek zkrátí.',[fraction(n,1000)]));
  }
  for(let i=0;i<4;i++){
-   let num=[3,5,7,9][i],den=10,base=[100,60,100,100][i],unit=[['m','cm'],['h','min'],['m²','dm²'],['m','cm']][i],proper=(num*base/den),wrong=proper+(i===3?0:(i+1)*2);
+   let num=[3,5,7,9][i]+variant*2,den=10,base=[100,60,100,100][i],unit=[['m','cm'],['h','min'],['m²','dm²'],['m','cm']][i],proper=(num*base/den),wrong=proper+(i===3?0:(i+1)*2);
    let conversion=fraction(num,den)+' '+unit[0];
    out.push(mk([conversion,decimal(num/den)+' '+unit[0],wrong+' '+unit[1]],i===3?null:'units',proper+' '+unit[1],'Nejdřív převedeme jednotku na '+base+' menších jednotek a výsledek vynásobíme čitatelem a vydělíme jmenovatelem. Správně je '+proper+' '+unit[1]+'.'));
  }
@@ -84,17 +86,112 @@ function generate(level){
  const kinds = Object.keys(instructions);
  return out.map((t,i)=>({
    ...t,
-   id:level+'-'+(i+1),
+   id:level+'-'+variant+'-'+(i+1),
    instruction:instructions[kinds[Math.floor(i/4)]],
    targetUnit:i>=16&&i<20?['cm','min','dm²','cm'][i-16]:null,
    camouflage:i===0||i===20
  }));
 }
-const pool={easy:generate('easy'),medium:generate('medium'),hard:generate('hard')};
+function hardCases(){
+ const errors=[
+   {step:1,type:'convert',explanation:'Při převodu smíšeného čísla vynásobíme celou část jmenovatelem a přičteme čitatele.'},
+   {step:2,type:'expand',explanation:'Při rozšiřování násobíme čitatele i jmenovatele stejným číslem.'},
+   {step:3,type:'add',explanation:'Při sčítání a odčítání zlomků se stejným jmenovatelem upravujeme čitatele.'},
+   {step:4,type:'convert',explanation:'Při převodu na smíšené číslo je zbytek po dělení čitatelem zlomkové části.'}
+ ];
+ const triples=[[12,18,9],[8,12,6],[10,15,6],[14,21,6],[9,12,8],[6,10,15]];
+ const lcm=(a,b)=>a*b/gcd(a,b);
+ return Array.from({length:60},(_,i)=>{
+   const denominators=triples[i%triples.length];
+   const common=denominators.reduce(lcm);
+   const variant=Math.floor(i/triples.length);
+   const whole=[4+variant,2+(i%4),1+(variant%2)];
+   const parts=denominators.map((d,j)=>1+(variant*(j+2)+i+j)%(d-1));
+   const sign=variant%3===0?1:-1;
+   const chain=items=>items[0]+' + '+items[1]+(sign===1?' + ':' − ')+items[2];
+   const total=values=>values[0]+values[1]+sign*values[2];
+   const start=chain(whole.map((w,j)=>mixed(w,parts[j],denominators[j])));
+   const improper=whole.map((w,j)=>w*denominators[j]+parts[j]);
+   const expanded=improper.map((n,j)=>n*common/denominators[j]);
+   const sum=total(expanded);
+   const asMixed=n=>{
+     const [r,d]=reduce(n,common);
+     const rest=r%d;
+     return rest?mixed(Math.floor(r/d),rest,d):String(r/d);
+   };
+   const correct=[start,chain(improper.map((n,j)=>fraction(n,denominators[j]))),
+     chain(expanded.map(n=>fraction(n,common))),fraction(sum,common),asMixed(sum)];
+   const error=errors[i%5];
+   const shown=correct.slice();
+   const camouflage=Boolean(error&&error.step<4&&variant%3===0);
+   if(error){
+     const term=variant%3, delta=1+(i%3);
+     let wrongSum=sum+delta;
+     if(error.step===1||error.step===2){
+       const wrongImproper=improper.slice();
+       if(error.step===1){
+         wrongImproper[term]+=delta;
+         shown[1]=chain(wrongImproper.map((n,j)=>fraction(n,denominators[j])));
+       }
+       const wrongExpanded=wrongImproper.map((n,j)=>n*common/denominators[j]);
+       if(error.step===2) wrongExpanded[term]+=delta;
+       shown[2]=chain(wrongExpanded.map(n=>fraction(n,common)));
+       wrongSum=total(wrongExpanded);
+     }
+     if(error.step<4) shown[3]=fraction(wrongSum,common);
+     shown[4]=camouflage?correct[4]:asMixed(wrongSum);
+   }
+   return {
+     id:'hard-'+(i+1),steps:shown,category:error?.type||null,badIndex:error?.step,
+     correction:correct[4],intermediate:error?correct.slice(error.step,-1):[],
+     explanation:error?.explanation||'Všechny členy řetězce mají stejnou hodnotu.',
+     instruction:'Vypočítej a výsledek zapiš jako smíšené číslo nebo celé číslo.',camouflage
+   };
+ });
+}
+function extraCases(level){
+ const offset=level==='medium'?5:0;
+ return Array.from({length:16},(_,i)=>{
+   const d=7+offset+i, n=2+i%4, m=1+i%3;
+   const addDenominators=i%2===0;
+   const correct=addDenominators?fraction(...reduce(n+m,d)):fraction(...reduce(n*m,d));
+   return {
+     id:level+'-extra-'+i,
+     steps:[fraction(n,d)+(addDenominators?' + ':' × ')+(addDenominators?fraction(m,d):String(m)),
+       addDenominators?fraction(n+m,2*d):fraction(n*m+1,d)],
+     category:addDenominators?'denominator':'arithmetic',
+     correction:correct,intermediate:[],
+     explanation:addDenominators?'Při sčítání zlomků se stejným jmenovatelem zůstává jmenovatel stejný.':'Při násobení zlomku celým číslem vynásobíme čitatele.',
+     instruction:addDenominators?'Sečti zlomky.':'Vynásob zlomek celým číslem.'
+   };
+ });
+}
+const pool={
+ easy:[...extraCases('easy'),...[0,1,2].flatMap(variant=>generate('easy',variant))],
+ medium:[...extraCases('medium'),...[0,1,2].flatMap(variant=>generate('medium',variant))],
+ hard:hardCases()
+};
 function shuffle(a){let b=a.slice();for(let i=b.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b;}
 let stepEntries={};
 let current=null,level=null,tasks=[],index=0,answers=[],selected='',choice='',fix='',countErrors=0,submitted=false;
-function pick(l){const arr=pool[l],cam=arr.filter(t=>t.camouflage),wrong=arr.filter(t=>t.category&&!t.camouflage),good=arr.filter(t=>!t.category);return shuffle([...cam,...shuffle(wrong).slice(0,10),...shuffle(good).slice(0,3)]);}
+const seenByLevel={easy:new Set(),medium:new Set(),hard:new Set()};
+function pick(l){
+ const seen=seenByLevel[l];
+ const available=predicate=>{
+   const candidates=shuffle(pool[l].filter(predicate));
+   return [...candidates.filter(task=>!seen.has(task.id)),...candidates.filter(task=>seen.has(task.id))];
+ };
+ const camouflage=available(task=>task.camouflage).slice(0,2);
+ const good=available(task=>!task.category).slice(0,3);
+ const errors=available(task=>task.category&&!task.camouflage);
+ const kinds=Object.keys(labels);
+ const varied=kinds.map(kind=>errors.find(task=>task.category===kind)).filter(Boolean);
+ const wrong=[...varied,...errors.filter(task=>!varied.includes(task))].slice(0,12-camouflage.length);
+ const set=shuffle([...camouflage,...wrong,...good]);
+ set.forEach(task=>seen.add(task.id));
+ if(seen.size===pool[l].length) seen.clear();
+ return set;
+}
 function menu(){root.innerHTML='<div class="head"><div><div class="tasktype">ZLOMKOV · '+modeName+'</div><h1>🕵️ Detektivní kancelář</h1><p class="minor">Prozkoumej každý krok výpočtu. Správný výsledek nemusí znamenat správný postup.</p></div></div><div class="menu">'+[['easy','Lehká','Smíšená čísla, desetinná čísla, sčítání a převody'],['medium','Střední','Vícekrokové postupy, zlomky a jednotky'],['hard','Těžká','Větší čísla a důmyslné početní omyly']].map(([id,n,h])=>'<button class="level" data-level="'+id+'">🔎<b>'+n+'</b><small>'+h+'</small></button>').join('')+'</div><p class="minor">Režim TŘÍDA: společná kontrola. ŽÁK: individuální zpětná vazba. TEST: vyhodnocení až po dokončení.</p>';root.querySelectorAll('[data-level]').forEach(x=>x.addEventListener('click',()=>start(x.dataset.level)));}
 function start(l){level=l;tasks=pick(l);index=0;answers=[];selected='';choice='';fix='';countErrors=0;submitted=false;show();}
 function show(){if(index>=tasks.length){summary();return;}current=tasks[index];stepEntries={};selected='';choice='';fix='';submitted=false;render();}
@@ -156,7 +253,7 @@ function correctResult(task, input){
  const unit=task.targetUnit;
  const normalized=input.trim().replace(/([a-z])(?:\^2|2)$/i,'$1²');
  const given=unit&&normalized.endsWith(unit)?normalized.slice(0,-unit.length):normalized;
- const expected=unit?task.correction.slice(0,-unit.length):task.correction.replace(/^\[\[|\]\]$/g,'');
+ const expected=unit?task.correction.slice(0,-unit.length):task.correction.replace(/^\[\[|\]\]$/g,'').replace(';',' ');
  const a=resultValue(given), b=resultValue(expected);
  return Boolean(a&&b&&a[0]*b[1]===b[0]*a[1]);
 }
@@ -166,12 +263,12 @@ function repairSteps(task){
 }
 function stepFields(task){
  return repairSteps(task).map((step,i)=>{
-   const fractions=step.match(/\[\[\d+\/\d+\]\]/g);
+   const terms=step.split(/\[\[\d+\/\d+\]\]/g).slice(0,-1);
    return '<span class="eq" aria-hidden="true">=</span><div class="repair-equation" role="group" aria-label="Opravený krok '+(firstBadIndex(task)+i)+'">'+
-     fractions.map((_,j)=>{
+     terms.map((operator,j)=>{
        const key=i+'-'+j;
-       return '<div class="result-fraction"><input type="text" inputmode="numeric" maxlength="30" aria-label="Čitatel zlomku '+(j+1)+'" data-repair="'+key+'-top"><span class="result-fraction-line" aria-hidden="true"></span><input type="text" inputmode="numeric" maxlength="30" aria-label="Jmenovatel zlomku '+(j+1)+'" data-repair="'+key+'-bottom"></div>';
-     }).join('<span aria-hidden="true">+</span>')+'</div>';
+       return escapeHTML(operator)+'<div class="result-fraction"><input type="text" inputmode="numeric" maxlength="30" aria-label="Čitatel zlomku '+(j+1)+'" data-repair="'+key+'-top"><span class="result-fraction-line" aria-hidden="true"></span><input type="text" inputmode="numeric" maxlength="30" aria-label="Jmenovatel zlomku '+(j+1)+'" data-repair="'+key+'-bottom"></div>';
+     }).join('')+'</div>';
  }).join('');
 }
 function repairMatches(step,i){
@@ -182,17 +279,86 @@ function repairMatches(step,i){
 function resultFields(task){
  const attributes='type="text" autocomplete="off" aria-describedby="result-hint result-feedback"';
  const fractionResult=task.correction.startsWith('[[');
- const hint=fractionResult?'Doplň čitatele a jmenovatele.':'Zadej hodnotu v uvedené jednotce.';
+ const mixedResult=task.correction.includes(';');
+ const hint=mixedResult?'Doplň celou část, čitatele a jmenovatele.':fractionResult?'Doplň čitatele a jmenovatele.':task.targetUnit?'Zadej hodnotu v uvedené jednotce.':'Doplň celé číslo.';
  const inputs=fractionResult
    ?'<div class="result-fraction"><input id="fix" '+attributes+' inputmode="numeric" maxlength="30" aria-label="Čitatel"><span class="result-fraction-line" aria-hidden="true"></span><input id="fix-denominator" '+attributes+' inputmode="numeric" maxlength="30" aria-label="Jmenovatel"></div>'
    :'<input id="fix" '+attributes+' maxlength="80" aria-label="Správný výsledek'+(task.targetUnit?' v '+task.targetUnit:'')+'">';
  const steps=repairSteps(task);
  const prefix=task.steps.slice(0,firstBadIndex(task)).map(value=>'<span class="math">'+math(value)+'</span>').join('<span class="eq" aria-hidden="true">=</span>');
  return '<h3 class="field" id="result-title">'+(steps.length?'Opravený postup':'Správný výsledek')+(task.targetUnit?' v '+task.targetUnit:'')+'</h3>'+
-   '<div class="repair-row">'+prefix+stepFields(task)+'<span class="eq" aria-hidden="true">=</span><div role="group" aria-label="Správný výsledek">'+inputs+'</div></div>'+
+   '<div class="repair-row">'+prefix+stepFields(task)+'<span class="eq" aria-hidden="true">=</span><div class="result-group" role="group" aria-label="Správný výsledek">'+(mixedResult?'<input id="fix-whole" '+attributes+' inputmode="numeric" maxlength="30" aria-label="Celá část">':'')+inputs+'</div></div>'+
    '<p class="minor" id="result-hint">'+hint+'</p>'+
    steps.map((_,i)=>'<p class="bad repair-feedback" id="repair-feedback-'+i+'" role="status"></p>').join('')+
    '<p class="bad" id="result-feedback" role="status"></p>';
+}
+const toolState={calculator:false,keypad:false,left:'',right:'',operation:'+',output:''};
+function boardTools(){
+ const keys=['7','8','9','4','5','6','1','2','3','−','0',',','/','␣','⌫','Další pole'];
+ return '<div class="board-tools">'+
+   '<details id="calculator-tool" '+(toolState.calculator?'open':'')+'><summary aria-label="Kalkulačka" title="Kalkulačka"><span aria-hidden="true">🧮</span></summary>'+
+     '<div class="tool-panel"><h3>Kalkulačka</h3><form id="calculator-form" class="calculator-form">'+
+     '<input id="calc-left" type="text" inputmode="decimal" maxlength="30" aria-label="První číslo">'+
+     '<select id="calc-operation" aria-label="Početní operace"><option>+</option><option>−</option><option>×</option><option>÷</option></select>'+
+     '<input id="calc-right" type="text" inputmode="decimal" maxlength="30" aria-label="Druhé číslo">'+
+     '<button type="submit" aria-label="Vypočítat">=</button><output id="calc-output" aria-live="polite"></output></form></div></details>'+
+   '<details id="keypad-tool" '+(toolState.keypad?'open':'')+'><summary aria-label="Numerická klávesnice" title="Numerická klávesnice"><span aria-hidden="true">⌨</span></summary>'+
+     '<div class="tool-panel"><h3>Numerická klávesnice</h3><div class="board-keypad">'+keys.map(key=>
+       '<button type="button" data-key="'+key+'"'+(key==='⌫'?' aria-label="Smazat znak"':key==='␣'?' aria-label="Mezera"':'')+'>'+key+'</button>'
+     ).join('')+'</div><p class="minor" id="keypad-status" role="status"></p></div></details></div>';
+}
+function bindBoardTools(){
+ for(const name of ['calculator','keypad']){
+   const panel=root.querySelector('#'+name+'-tool');
+   panel.ontoggle=()=>{toolState[name]=panel.open;};
+ }
+ const left=root.querySelector('#calc-left'), right=root.querySelector('#calc-right');
+ const operation=root.querySelector('#calc-operation'), output=root.querySelector('#calc-output');
+ const fields=[left,right,...root.querySelectorAll('.answer-fields input')];
+ let active=null;
+ fields.forEach(field=>field.onfocus=()=>{active=field;});
+ left.value=toolState.left;
+ right.value=toolState.right;
+ operation.value=toolState.operation;
+ output.textContent=toolState.output;
+ left.oninput=()=>{toolState.left=left.value;};
+ right.oninput=()=>{toolState.right=right.value;};
+ operation.onchange=()=>{toolState.operation=operation.value;};
+ root.querySelector('#calculator-form').onsubmit=event=>{
+   event.preventDefault();
+   const a=resultValue(left.value), b=resultValue(right.value);
+   const x=a?Number(a[0])/Number(a[1]):NaN, y=b?Number(b[0])/Number(b[1]):NaN;
+   const result={'+':()=>x+y,'−':()=>x-y,'×':()=>x*y,'÷':()=>x/y}[operation.value]();
+   toolState.output=Number.isFinite(result)?String(Number(result.toPrecision(12))).replace('.',','):'Zkontroluj čísla a dělení nulou.';
+   output.textContent=toolState.output;
+ };
+ const status=root.querySelector('#keypad-status');
+ root.querySelectorAll('[data-key]').forEach(button=>{
+   button.onpointerdown=event=>event.preventDefault();
+   button.onclick=()=>{
+     const key=button.dataset.key;
+     if(!active||active.disabled){
+       status.textContent='Nejdřív vyber pole, do kterého chceš psát.';
+       return;
+     }
+     status.textContent='';
+     if(key==='Další pole'){
+       const group=fields.slice(active===left||active===right?0:2,active===left||active===right?2:fields.length);
+       group[(group.indexOf(active)+1)%group.length].focus();
+       return;
+     }
+     const start=active.selectionStart, end=active.selectionEnd;
+     if(key==='⌫'){
+       active.setRangeText('',start===end?Math.max(0,start-1):start,end,'end');
+     }else{
+       const text=key==='␣'?' ':key==='−'?'-':key;
+       if(active.value.length-(end-start)+text.length>active.maxLength) return;
+       active.setRangeText(text,start,end,'end');
+     }
+     active.dispatchEvent(new Event('input',{bubbles:true}));
+     active.focus({preventScroll:true});
+   };
+ });
 }
 function render(){
  const isGood = selected==='correct';
@@ -205,7 +371,7 @@ function render(){
      <button id="back" class="soft">← Výběr obtížnosti</button>
    </div>
    <div class="progress"><div class="bar" style="width:${Math.round(index/15*100)}%"></div></div>
-   <section class="box assignment equation" aria-label="Příklad a výpočet">${equation()}</section>
+   <section class="box assignment equation ${level==='hard'?'long-equation':''}" aria-label="Příklad a výpočet">${equation()}</section>
    <label class="check"><input id="correct" type="checkbox" ${isGood?'checked':''}><span>Celý postup je správný</span></label>
    <p class="minor" id="selection-feedback" role="status"></p>
    ${hasError?'<fieldset class="box error-types"><legend>V čem je chyba?</legend><div class="types">'+Object.entries(labels).map(([key,label])=>
@@ -214,7 +380,9 @@ function render(){
    ${isGood||mayCorrect?
      '<section class="box answer-fields">'+(mayCorrect?resultFields(current):'')+
      '<div class="controls"><button class="primary" id="submit" disabled>Odevzdat odpověď</button></div></section>':''}
+   ${boardTools()}
    <div id="feedback"></div>`;
+ bindBoardTools();
  root.querySelector('#back').onclick=menu;
  root.querySelectorAll('[data-step]').forEach(button=>button.onclick=()=>{
    if(!current.category||button.dataset.step!==String(firstBadIndex(current))){
@@ -241,7 +409,7 @@ function render(){
    render();
    root.querySelector(choice===current.category?(repairSteps(current).length?'[data-repair]':'#fix'):'[data-type="'+choice+'"]')?.focus({preventScroll:true});
  });
- const inp=root.querySelector('#fix'), denominator=root.querySelector('#fix-denominator'), btn=root.querySelector('#submit');
+ const inp=root.querySelector('#fix'), denominator=root.querySelector('#fix-denominator'), whole=root.querySelector('#fix-whole'), btn=root.querySelector('#submit');
  if(!btn) return;
  const repairInputs=[...root.querySelectorAll('[data-repair]')];
  function updateSubmit(){
@@ -250,7 +418,7 @@ function render(){
      : fix.trim();
    const repaired=repairInputs.every(input=>/^\d+$/.test(input.value.trim())&&
      (!input.dataset.repair.endsWith('-bottom')||/[1-9]/.test(input.value)));
-   btn.disabled=!(isGood||(complete&&repaired));
+   btn.disabled=!(isGood||(complete&&repaired&&(!whole||/^\d+$/.test(whole.value.trim()))));
  }
 
 
@@ -266,13 +434,15 @@ function render(){
  if(inp){
    if(denominator){
      const [top,bottom='']=fix.split('/');
-     inp.value=top;
+     const [wholeValue,numerator]=whole?top.split(' '):['',top];
+     if(whole) whole.value=wholeValue;
+     inp.value=numerator||'';
      denominator.value=bottom;
    }else{
      inp.value=fix;
    }
    const readResult=()=>{
-     fix=denominator?inp.value.trim()+'/'+denominator.value.trim():inp.value;
+     fix=denominator?(whole?whole.value.trim()+' ':'')+inp.value.trim()+'/'+denominator.value.trim():inp.value;
      inp.removeAttribute('aria-invalid');
      denominator?.removeAttribute('aria-invalid');
      root.querySelector('#result-feedback').textContent='';
@@ -280,6 +450,7 @@ function render(){
    };
    inp.oninput=readResult;
    if(denominator) denominator.oninput=readResult;
+   if(whole) whole.oninput=readResult;
  }
  updateSubmit();
  btn.onclick=submit;
@@ -296,7 +467,8 @@ function submit(){
    root.querySelector('[data-repair="'+wrongStep+'-0-top"]').focus();
    return;
  }
- const exactFinal=!repaired.length||fix.split('/').map(value=>String(BigInt(value))).join('/')===current.correction.slice(2,-2);
+ const exactFinal=!repaired.length||!current.correction.startsWith('[[')||
+   fix.split(/([ /])/).map(value=>/^\d+$/.test(value)?String(BigInt(value)):value).join('')===current.correction.slice(2,-2).replace(';',' ');
  if(current.category&&(!correctResult(current,fix)||!exactFinal)){
    const input=root.querySelector('#fix');
    input.setAttribute('aria-invalid','true');
@@ -313,13 +485,13 @@ function submit(){
  const fb=root.querySelector('#feedback');
  fb.innerHTML=(mode==='test'?'<div class="notice">Odpověď uložena. Vyhodnocení se zobrazí po dokončení všech 15 případů.</div>':'<div class="notice '+(correct?'':'warn')+'"><b>'+(correct?'Místo a typ jsou správně.':'Tvoje označení není úplně správně.')+'</b><p>'+(current.category?'První chybný krok je číslo '+(firstBadIndex(current))+'. Typ: '+labels[current.category]+'.':'Celý postup je správný.')+'</p><p>'+current.explanation+'</p>'+(current.category?'<p>Správný výsledek: <b>'+math(current.correction)+'</b></p>':'')+'<p class="minor">Svůj výsledek můžeš porovnat se vzorem.</p></div>');
  const next=document.createElement('button');next.className='primary';next.textContent=index===14?'Zobrazit vyhodnocení':'Další případ →';next.onclick=()=>{index++;show()};fb.append(next);
- root.querySelectorAll('.step,[data-type],[data-repair],#correct,#fix,#fix-denominator,#submit').forEach(x=>x.disabled=true);
+ root.querySelectorAll('.step,[data-type],[data-repair],#correct,#fix,#fix-denominator,#fix-whole,#submit').forEach(x=>x.disabled=true);
  if(mode==='student'&&countErrors>=5){const note=document.createElement('p');note.className='notice warn';note.textContent='Pět nesprávně označených případů. Podle pravidel režimu ŽÁK můžeš začít nové kolo.';fb.append(note);}
 }
 function firstBadIndex(t){
  // V generovaných chybných případech je první chybný člen druhý, s výjimkou jednotek,
  // kde je chybný výsledek až ve třetím členu.
- return t.category==='units'?2:1;
+ return t.badIndex??(t.category==='units'?2:1);
 }
 function summary(){
  const scored=answers.filter(a=>a.correct).length;
