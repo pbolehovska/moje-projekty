@@ -4,6 +4,15 @@
 :root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#173f45;background:#f5f7f0}*{box-sizing:border-box}body{margin:0;padding:16px}button,input,textarea{font:inherit}button{cursor:pointer;border-radius:12px;border:1.5px solid #c7d7cb;padding:11px 13px;min-height:45px;background:#fff;color:#173f45}button:focus-visible,textarea:focus-visible,input:focus-visible{outline:3px solid #e6a146;outline-offset:2px}button:disabled{opacity:.5;cursor:not-allowed}.primary{background:#173f45;color:white;font-weight:750}.soft{background:#e5eee2}.layout{max-width:1020px;margin:auto}.head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.menu{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:20px 0}.level{background:#ecf2e5;padding:24px 12px;min-height:155px}.level b{display:block;font-size:25px;margin:8px 0}.minor{font-size:13px;color:#5d766d;line-height:1.6}.box{background:white;border:1px solid #d5e2d5;border-radius:18px;padding:18px;margin-top:12px}.progress{height:9px;background:#dae5d9;border-radius:10px;overflow:hidden;margin:13px 0 19px}.bar{height:100%;background:#52977d}.steps{display:flex;flex-wrap:wrap;gap:9px;align-items:stretch;margin:20px 0}.step{display:flex;align-items:center;gap:6px;padding:13px 12px;min-height:78px;flex:1 1 auto;border:2px solid #c8d7c9;font-size:20px;background:#fffdf8;justify-content:center;white-space:nowrap}.step[aria-pressed=true],.type[aria-pressed=true]{border:2px solid #1671a8;background:#e8f4fc}.fraction{display:inline-flex;flex-direction:column;align-items:stretch;text-align:center;vertical-align:middle;line-height:1.02;min-width:22px;font-variant-numeric:tabular-nums}.fraction .n{border-bottom:2.7px solid #173f45;padding:1px 4px 4px}.fraction .d{padding:4px 4px 1px}.mixed{display:inline-flex;gap:3px;align-items:center}.math{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}.eq{font-weight:800;color:#5a756a}.types{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.field{display:block;font-weight:750;margin:18px 0 7px}input[type=text],textarea{display:block;width:100%;border:1.5px solid #b2c6b7;border-radius:11px;padding:11px;color:#173f45}textarea{height:115px;resize:vertical}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.notice{background:#e8f1e4;padding:14px;border-radius:12px;margin:12px 0;line-height:1.55}.warn{background:#fff1d9}.score{font-size:26px;font-weight:800}.check{display:flex;gap:10px;align-items:center;padding:13px;border-radius:11px;background:#e8f1e4}.check input{width:20px;height:20px}.tasktype{font-size:12px;font-weight:800;letter-spacing:1px;color:#698176}.small{font-size:13px;color:#58746a}.controls{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px}.summary{padding:8px 0;border-bottom:1px solid #e2e9df}.summary p{margin:5px 0}.bad{color:#a34035}.good{color:#276b42}@media(max-width:650px){body{padding:8px}.menu{grid-template-columns:1fr}.level{min-height:85px}.box{padding:12px}.types{grid-template-columns:1fr}.step{font-size:17px;min-height:70px;padding:8px}}
 .assignment{background:#fff1c9;border:2px solid #ca962e}.assignment h3{margin:0 0 6px}.assignment p{margin:0 0 12px}.assignment .math{font-size:clamp(1.5rem,4vw,2.25rem);font-weight:650;gap:.3em}.steps .math{gap:.3em}.steps .given{display:flex;align-items:center;justify-content:center;padding:10px;font-size:inherit}.step .math{gap:.3em}.summary .math{flex-wrap:wrap;white-space:normal}
 .steps{display:grid;gap:8px}.steps .given{justify-content:flex-start;padding:6px 14px}.steps .step{display:grid;justify-content:stretch;justify-items:start;gap:6px;text-align:left;min-width:0;white-space:normal}.step-number{font-size:.72em;font-weight:750;color:#476359}.step .math{flex-wrap:wrap;white-space:normal}.fraction{white-space:nowrap}
+
+.equation{display:flex;flex-wrap:wrap;align-items:center;gap:3px 6px;font-size:clamp(1.2rem,2.5vw,1.75rem);margin-bottom:12px}
+.equation-part{display:inline-flex;align-items:center;gap:5px;max-width:100%}
+.equation .step{display:inline-flex;align-items:center;min-height:48px;padding:6px;border:1px solid transparent;background:transparent;font-size:inherit;white-space:nowrap}
+.equation .step:hover{border-color:#9b741e;background:#fff7df}
+.equation .step[aria-pressed=true]{color:#a22227;background:#ffe0df;border-color:#af2f34;opacity:1}
+.equation .step[aria-pressed=true] .n{border-color:currentColor}
+.error-types{min-width:0}.error-types legend{font-weight:750}.type{display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer}.type:has(:checked){background:#e8f4fc}
+#selection-feedback:empty,#type-feedback:empty{display:none}.answer-fields .field:first-child{margin-top:0}
 </style></head><body><main class="layout" id="root"></main><script>
 'use strict';
 const root=document.querySelector('#root');
@@ -92,21 +101,79 @@ function pick(l){const arr=pool[l],cam=arr.filter(t=>t.camouflage),wrong=arr.fil
 function menu(){root.innerHTML='<div class="head"><div><div class="tasktype">ZLOMKOV · '+modeName+'</div><h1>🕵️ Detektivní kancelář</h1><p class="minor">Prozkoumej každý krok výpočtu. Správný výsledek nemusí znamenat správný postup.</p></div></div><div class="menu">'+[['easy','Lehká','Smíšená čísla, desetinná čísla, sčítání a převody'],['medium','Střední','Vícekrokové postupy, zlomky a jednotky'],['hard','Těžká','Větší čísla a důmyslné početní omyly']].map(([id,n,h])=>'<button class="level" data-level="'+id+'">🔎<b>'+n+'</b><small>'+h+'</small></button>').join('')+'</div><p class="minor">Režim TŘÍDA: společné zdůvodňování. ŽÁK: individuální zpětná vazba. TEST: vyhodnocení až po dokončení.</p>';root.querySelectorAll('[data-level]').forEach(x=>x.addEventListener('click',()=>start(x.dataset.level)));}
 function start(l){level=l;tasks=pick(l);index=0;answers=[];selected='';choice='';reason='';fix='';countErrors=0;submitted=false;show();}
 function show(){if(index>=tasks.length){summary();return;}current=tasks[index];selected='';choice='';reason='';fix='';submitted=false;render();}
+function equation(){
+ const parts = [];
+ current.steps.forEach((value,i)=>{
+   if(i>0&&value===current.steps[i-1]) return;
+   const calculation = current.calculations[i-1];
+   if(calculation) parts.push({value:calculation, key:'calculation-'+i});
+   parts.push({value,key:String(i)});
+ });
+ return parts.map(({value,key},i)=>
+   '<span class="equation-part">'+(i?'<span class="eq">=</span>':'')+
+   '<button class="step" type="button" data-step="'+key+'" aria-pressed="'+(selected===key)+'">'+math(value)+'</button></span>'
+ ).join('');
+}
 function render(){
- const isGood=selected==='correct';
- root.innerHTML='<div class="head"><div><div class="tasktype">DETEKTIVNÍ KANCELÁŘ · '+modeName+' · '+({easy:'Lehká',medium:'Střední',hard:'Těžká'}[level])+'</div><h2>Případ '+(index+1)+' z 15</h2></div><button id="back" class="soft">← Výběr obtížnosti</button></div><div class="progress"><div class="bar" style="width:'+Math.round(index/15*100)+'%"></div></div><section class="box assignment" aria-labelledby="assignment-title"><h3 id="assignment-title">Původní zadání</h3><p>'+current.instruction+'</p><div class="math">'+assignmentMath(current)+'</div></section><section class="box" aria-labelledby="steps-title"><h3 id="steps-title">Postup k prověření</h3><p><b>1. Klikni přímo na krok, ve kterém vznikla první chyba.</b></p><p class="minor">Prohlédni si všechny řádky výpočtu a označ první chybnou rovnost. Můžeš také označit celý postup za správný.</p><div class="steps">'+current.steps.map((value,i)=>{
-   if(i===0) return '<span class="math given">'+math(value)+'</span>';
-   if(value===current.steps[i-1]) return '';
-   return '<button class="step" data-step="'+i+'" aria-pressed="'+(selected===String(i))+'"><span class="step-number">Krok '+i+'</span>'+workedStep(current,i)+'</button>';
- }).join('')+'</div><label class="check"><input id="correct" type="checkbox" '+(isGood?'checked':'')+'><span>Celý postup je správný</span></label>'+(selected!==''?'<hr><p><b>2. '+(isGood?'Zdůvodni správnost celého postupu.':'Jaký typ chyby jsi našel?')+'</b></p>':'')+(!isGood&&selected!==''?'<div class="types">'+Object.entries(labels).map(([v,t])=>'<button class="type" data-type="'+v+'" aria-pressed="'+(choice===v)+'">'+t+'</button>').join('')+'</div>':'')+(selected!==''&&(isGood||choice)?'<label class="field" for="reason">3. Vysvětli vlastními slovy své rozhodnutí</label><textarea id="reason" placeholder="Který výpočet nebo pravidlo sis ověřil/a?"></textarea>'+(isGood?'':'<label class="field" for="fix">4. Zapiš správný mezikrok nebo opravený výsledek</label><input id="fix" type="text" placeholder="Například 27/8 nebo 3 3/8">')+'<div class="controls"><button class="primary" id="submit" disabled>Odevzdat odpověď</button></div>':'')+'<div id="feedback"></div></section>';
+ const isGood = selected==='correct';
+ const hasError = current.category && selected===String(firstBadIndex(current));
+ const mayCorrect = hasError && choice===current.category;
+ root.innerHTML=`
+   <div class="head">
+     <div><div class="tasktype">DETEKTIVNÍ KANCELÁŘ · ${modeName} · ${{easy:'Lehká',medium:'Střední',hard:'Těžká'}[level]}</div>
+       <h2>Případ ${index+1} z 15</h2></div>
+     <button id="back" class="soft">← Výběr obtížnosti</button>
+   </div>
+   <div class="progress"><div class="bar" style="width:${Math.round(index/15*100)}%"></div></div>
+   <section class="box assignment equation" aria-label="Příklad a výpočet">${equation()}</section>
+   <label class="check"><input id="correct" type="checkbox" ${isGood?'checked':''}><span>Celý postup je správný</span></label>
+   <p class="minor" id="selection-feedback" role="status"></p>
+   ${hasError?'<fieldset class="box error-types"><legend>V čem je chyba?</legend><div class="types">'+Object.entries(labels).map(([key,label])=>
+     '<label class="type"><input type="radio" name="error-type" data-type="'+key+'" '+(choice===key?'checked':'')+'> '+label+'</label>'
+   ).join('')+'</div><p class="minor" id="type-feedback" role="status">'+(choice&&!mayCorrect?'Zkus jinou možnost.':'')+'</p></fieldset>':''}
+   ${isGood||mayCorrect?
+     '<section class="box answer-fields">'+(mayCorrect?'<label class="field" for="fix">Správný výpočet</label><input id="fix" type="text" autocomplete="off">':'')+
+     '<label class="field" for="reason">Zdůvodnění</label><textarea id="reason"></textarea><div class="controls"><button class="primary" id="submit" disabled>Odevzdat odpověď</button></div></section>':''}
+   <div id="feedback"></div>`;
  root.querySelector('#back').onclick=menu;
- root.querySelectorAll('[data-step]').forEach(x=>x.onclick=()=>{selected=x.dataset.step;choice='';render()});
- root.querySelector('#correct').onchange=e=>{selected=e.target.checked?'correct':'';choice='';render()};
- root.querySelectorAll('[data-type]').forEach(x=>x.onclick=()=>{choice=x.dataset.type;render()});
+ root.querySelectorAll('[data-step]').forEach(button=>button.onclick=()=>{
+   if(!current.category||button.dataset.step!==String(firstBadIndex(current))){
+     root.querySelector('#selection-feedback').textContent='Zkus jiné místo ve výpočtu.';
+     return;
+   }
+   if(hasError) return;
+   selected=button.dataset.step;
+   render();
+   root.querySelector('[data-type]')?.focus({preventScroll:true});
+ });
+ root.querySelector('#correct').onchange=event=>{
+   if(current.category){
+     event.target.checked=false;
+     root.querySelector('#selection-feedback').textContent='V postupu je chyba.';
+     return;
+   }
+   selected=event.target.checked?'correct':'';
+   render();
+   root.querySelector(isGood?'#correct':'#reason')?.focus({preventScroll:true});
+ };
+ root.querySelectorAll('[data-type]').forEach(option=>option.onchange=()=>{
+   choice=option.dataset.type;
+   render();
+   root.querySelector(choice===current.category?'#fix':'[data-type="'+choice+'"]')?.focus({preventScroll:true});
+ });
  const txt=root.querySelector('#reason'), inp=root.querySelector('#fix'), btn=root.querySelector('#submit');
- if(txt){txt.value=reason;txt.oninput=()=>{reason=txt.value;btn.disabled=!(reason.trim().length>=12&&(isGood||fix.trim().length>=2))};}
- if(inp){inp.value=fix;inp.oninput=()=>{fix=inp.value;btn.disabled=!(reason.trim().length>=12&&fix.trim().length>=2)};}
- if(btn){btn.disabled=!(reason.trim().length>=12&&(isGood||fix.trim().length>=2));btn.onclick=submit;}
+ if(!btn) return;
+ function updateSubmit(){
+   btn.disabled=!(reason.trim().length>=12&&(isGood||fix.trim().length>0));
+ }
+ txt.value=reason;
+ txt.oninput=()=>{reason=txt.value;updateSubmit();};
+ if(inp){
+   inp.value=fix;
+   inp.oninput=()=>{fix=inp.value;updateSubmit();};
+ }
+ updateSubmit();
+ btn.onclick=submit;
 }
 function submit(){
  if(submitted)return;submitted=true;
@@ -119,7 +186,7 @@ function submit(){
  const fb=root.querySelector('#feedback');
  fb.innerHTML=(mode==='test'?'<div class="notice">Odpověď uložena. Vyhodnocení se zobrazí po dokončení všech 15 případů.</div>':'<div class="notice '+(correct?'':'warn')+'"><b>'+(correct?'Místo a typ jsou správně.':'Tvoje označení není úplně správně.')+'</b><p>'+(current.category?'První chybný krok je číslo '+(firstBadIndex(current))+'. Typ: '+labels[current.category]+'.':'Celý postup je správný.')+'</p><p>'+current.explanation+'</p>'+(current.category?'<p>Správný mezikrok: <b>'+math(current.correction)+'</b></p>':'')+'<p class="minor">Slovní zdůvodnění a oprava jsou zaznamenané. Automaticky se hodnotí místo a typ chyby; slovní text musí posoudit učitel nebo žák při společné kontrole.</p></div>');
  const next=document.createElement('button');next.className='primary';next.textContent=index===14?'Zobrazit vyhodnocení':'Další případ →';next.onclick=()=>{index++;show()};fb.append(next);
- root.querySelectorAll('.step,.type,#correct,#reason,#fix,#submit').forEach(x=>x.disabled=true);
+ root.querySelectorAll('.step,[data-type],#correct,#reason,#fix,#submit').forEach(x=>x.disabled=true);
  if(mode==='student'&&countErrors>=5){const note=document.createElement('p');note.className='notice warn';note.textContent='Pět nesprávně označených případů. Podle pravidel režimu ŽÁK můžeš začít nové kolo.';fb.append(note);}
 }
 function firstBadIndex(t){
