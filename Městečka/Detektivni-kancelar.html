@@ -128,6 +128,63 @@ function generate(level, variant){
    camouflage:i===0||i===20
  }));
 }
+function mediumCases(){
+ const pairs=[[6,8],[8,12],[9,6],[10,15],[12,18],[14,21],[15,20],[16,12],[18,24],[20,15]];
+ const errors=[
+   {step:1,type:'convert',note:'Při převodu smíšeného čísla přičteme čitatele k součinu celé části a jmenovatele.'},
+   {step:2,type:'expand',note:'Čitatele a jmenovatele rozšiřujeme stejným číslem.'},
+   {step:3,type:'denominator',note:'Po převedení na společného jmenovatele už jmenovatel neměníme.'},
+   {step:3,type:'add',note:'Se společným jmenovatelem sčítáme nebo odčítáme pouze čitatele.'},
+   {step:4,type:'reduce',note:'Při krácení dělíme čitatele a jmenovatele stejným číslem.'}
+ ];
+ return Array.from({length:60},(_,i)=>{
+   const [a,b]=pairs[i%pairs.length];
+   const variant=Math.floor(i/pairs.length);
+   const whole=1+variant%3;
+   const x=1+(i+variant)%(a-1), y=1+(2*i+variant)%(b-1);
+   const sign=(i+variant)%2===0?1:-1;
+   const common=a*b/gcd(a,b);
+   const join=(left,right)=>left+(sign===1?' + ':' − ')+right;
+   const improper=whole*a+x, left=improper*common/a, right=y*common/b;
+   const sum=left+sign*right;
+   const reduced=fraction(...reduce(sum,common));
+   const correct=[join(mixed(whole,x,a),fraction(y,b)),join(fraction(improper,a),fraction(y,b)),
+     join(fraction(left,common),fraction(right,common)),fraction(sum,common),reduced];
+   const error=errors[(i+variant)%6];
+   const shown=correct.slice();
+   const camouflage=Boolean(error&&error.step<4&&variant%3===0);
+   if(error){
+     const badImproper=improper+(error.step===1?1:0);
+     const badLeft=badImproper*common/a+(error.step===2?1:0);
+     const badSum=badLeft+sign*right+(error.type==='add'?1:0);
+     const badDenominator=common+(error.type==='denominator'?1:0);
+     if(error.step===1) shown[1]=join(fraction(badImproper,a),fraction(y,b));
+     if(error.step<=2) shown[2]=join(fraction(badLeft,common),fraction(right,common));
+     if(error.step<=3) shown[3]=fraction(badSum,badDenominator);
+     shown[4]=camouflage?reduced:error.step===4?fraction(...reduce(sum+1,common)):fraction(...reduce(badSum,badDenominator));
+   }
+   return {
+     id:'medium-chain-'+i,steps:shown,category:error?.type||null,badIndex:error?.step,
+     correction:reduced,intermediate:error?correct.slice(error.step,-1):[],
+     explanation:error?.note||'Všechny členy řetězce mají stejnou hodnotu.',
+     instruction:'Vypočítej a výsledek zkrať.',camouflage
+   };
+ });
+}
+function mediumUnitCases(){
+ const divisors=[8,16,20,25];
+ return Array.from({length:12},(_,i)=>{
+   const d=divisors[i%divisors.length], n=1+Math.floor(i/divisors.length)*2;
+   const minutes=n*60/d, seconds=n*3600/d;
+   return {
+     id:'medium-unit-'+i,
+     steps:[fraction(n,d)+' h',decimal(n/d)+' h',decimal(minutes)+' min',(seconds+5+(i%3)*5)+' s'],
+     category:'units',badIndex:3,correction:seconds+' s',intermediate:[],targetUnit:'s',
+     explanation:'Při převodu minut na sekundy násobíme šedesáti.',
+     instruction:'Převeď hodiny na sekundy.'
+   };
+ });
+}
 function hardCases(){
  const errors=[
    {step:1,type:'convert',explanation:'Při převodu smíšeného čísla vynásobíme celou část jmenovatelem a přičteme čitatele.'},
@@ -204,7 +261,7 @@ function extraCases(level){
 }
 const pool={
  easy:[...extraCases('easy'),...[0,1,2].flatMap(variant=>generate('easy',variant))],
- medium:[...extraCases('medium'),...[0,1,2].flatMap(variant=>generate('medium',variant))],
+ medium:[...mediumCases(),...mediumUnitCases()],
  hard:hardCases()
 };
 function shuffle(a){let b=a.slice();for(let i=b.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b;}
@@ -228,7 +285,7 @@ function pick(l){
  if(seen.size===pool[l].length) seen.clear();
  return set;
 }
-function menu(){root.innerHTML='<div class="head"><div><div class="tasktype">ZLOMKOV · '+modeName+'</div><h1>🕵️ Detektivní kancelář</h1><p class="minor">Prozkoumej každý krok výpočtu. Správný výsledek nemusí znamenat správný postup.</p></div></div><div class="menu">'+[['easy','Lehká','Smíšená čísla, desetinná čísla, sčítání a převody'],['medium','Střední','Vícekrokové postupy, zlomky a jednotky'],['hard','Těžká','Větší čísla a důmyslné početní omyly']].map(([id,n,h])=>'<button class="level" data-level="'+id+'">🔎<b>'+n+'</b><small>'+h+'</small></button>').join('')+'</div><p class="minor">Režim TŘÍDA: společná kontrola. ŽÁK: individuální zpětná vazba. TEST: vyhodnocení až po dokončení.</p>';root.querySelectorAll('[data-level]').forEach(x=>x.addEventListener('click',()=>start(x.dataset.level)));}
+function menu(){root.innerHTML='<div class="head"><div><div class="tasktype">ZLOMKOV · '+modeName+'</div><h1>🕵️ Detektivní kancelář</h1><p class="minor">Prozkoumej každý krok výpočtu. Správný výsledek nemusí znamenat správný postup.</p></div></div><div class="menu">'+[['easy','Lehká','Smíšená čísla, desetinná čísla, sčítání a převody'],['medium','Střední','Delší výpočty se zlomky, smíšenými čísly a jednotkami'],['hard','Těžká','Větší čísla a důmyslné početní omyly']].map(([id,n,h])=>'<button class="level" data-level="'+id+'">🔎<b>'+n+'</b><small>'+h+'</small></button>').join('')+'</div><p class="minor">Režim TŘÍDA: společná kontrola. ŽÁK: individuální zpětná vazba. TEST: vyhodnocení až po dokončení.</p>';root.querySelectorAll('[data-level]').forEach(x=>x.addEventListener('click',()=>start(x.dataset.level)));}
 function start(l){level=l;tasks=pick(l);index=0;answers=[];selected='';choice='';fix='';countErrors=0;submitted=false;show();}
 function show(){if(index>=tasks.length){summary();return;}current=tasks[index];stepEntries={};selected='';choice='';fix='';submitted=false;render();}
 function equation(){
@@ -433,7 +490,7 @@ function render(){
      <button id="back" class="soft">← Výběr obtížnosti</button>
    </div>
    <div class="progress"><div class="bar" style="width:${Math.round(index/15*100)}%"></div></div>
-   <section class="box assignment equation ${level==='hard'?'long-equation':''}" aria-label="Příklad a výpočet"><div class="calculation-track">${equation()}</div></section>
+   <section class="box assignment equation ${level!=='easy'?'long-equation':''}" aria-label="Příklad a výpočet"><div class="calculation-track">${equation()}</div></section>
    <label class="check"><input id="correct" type="checkbox" ${isGood?'checked':''}><span>Celý postup je správný</span></label>
    <p class="minor" id="selection-feedback" role="status"></p>
    ${hasError?'<fieldset class="box error-types"><legend>V čem je chyba?</legend><div class="types">'+Object.entries(labels).map(([key,label])=>
