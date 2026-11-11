@@ -405,10 +405,37 @@ dialog.pizza-dialog.pizza-keypad-ready{inset:0!important;width:100vw!important;h
 .worksheet-answer-line{display:inline-block;width:clamp(64px,9vw,125px);height:.8em;border-bottom:2px solid #172e32;vertical-align:baseline;margin:0 4px}
 @media(max-width:700px){.worksheet-row{grid-template-columns:minmax(0,1fr);gap:2px}.worksheet-join{display:none}.worksheet-item{font-size:20px;text-align:left;padding:12px 4px}.worksheet-item .test-fraction{font-size:1.25em}.worksheet-answer-line{width:78px}}
 </style><style>.switch-test-heading{font-weight:800;font-size:clamp(18px,1.8vw,25px);margin:10px 0 4px}.switch-worksheet-row{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:12px;margin:14px 0;padding:10px 2px;border-bottom:1px solid #e0e4dd;break-inside:avoid;page-break-inside:avoid}.worksheet-frac-problem{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:0;font-size:clamp(25px,3vw,38px);white-space:nowrap}.worksheet-join{font-size:1.1em;font-weight:700;text-align:center}.switch-worksheet-row .worksheet-answer-line{width:clamp(55px,8vw,100px);height:.8em;border-bottom:2px solid #172e32;vertical-align:baseline;margin:0 2px}.switch-worksheet-row .answer{grid-column:1/-1;text-align:center;font-size:16px}@media(max-width:700px){.switch-worksheet-row{grid-template-columns:minmax(0,1fr);gap:10px}.switch-worksheet-row .worksheet-join{display:none}.worksheet-frac-problem{font-size:30px;justify-content:flex-start}}@media print{.worksheet-frac-problem{font-size:22pt}.switch-worksheet-row .worksheet-answer-line{width:24mm;height:.65em;border-bottom:1.5px solid}.switch-worksheet-row{gap:6px;margin:8px 0;padding:5px 0}.switch-worksheet-row .answer{font-size:12pt}}</style><style>
-dialog.detective-dialog{width:min(1160px,calc(100% - 16px));max-height:calc(100dvh - 12px);padding:18px;overflow:auto;text-align:left}
-dialog.detective-dialog .modal-icon{display:none}
-dialog.detective-dialog #dialog-title{font-size:22px;text-align:left;margin:0 0 10px}
-@media(max-width:600px){dialog.detective-dialog{padding:9px}}
+/* Detektivní kancelář používá stejné celostránkové herní okno jako ostatní stanoviště. */
+#building-dialog.detective-dialog{
+  width:100vw!important;max-width:none!important;height:100dvh!important;
+  max-height:100dvh!important;inset:0!important;margin:0!important;
+  padding:16px max(16px,calc((100vw - 1200px)/2)) 65px!important;
+  overflow-x:hidden!important;overflow-y:auto!important;
+  text-align:left!important;border-radius:0!important;
+}
+#building-dialog.detective-dialog .modal-icon{display:none!important}
+#building-dialog.detective-dialog #dialog-title{display:none!important}
+#building-dialog.detective-dialog #dialog-content{
+  display:block!important;position:static!important;height:auto!important;
+  min-height:0!important;max-height:none!important;width:100%!important;
+  max-width:1100px!important;margin:0 auto!important;
+  padding:0!important;align-items:initial!important;justify-content:initial!important;
+}
+#building-dialog.detective-dialog #dialog-content>div:last-child{
+  display:block!important;width:100%!important;min-width:0!important;
+  max-width:none!important;height:auto!important;max-height:none!important;
+  margin:0!important;flex:none!important;overflow:visible!important;
+}
+#building-dialog.detective-dialog iframe{
+  display:block!important;width:100%!important;max-width:none!important;
+  min-height:550px;border:0!important;border-radius:12px!important;
+}
+#building-dialog.detective-dialog>.game-selection-return{display:none!important}
+#building-dialog.detective-dialog>.return{display:block!important}
+@media(max-width:650px){
+  #building-dialog.detective-dialog{padding:12px 9px 58px!important}
+  #building-dialog.detective-dialog iframe{min-height:630px}
+}
 </style>
 </head>
 <body>
@@ -1196,9 +1223,28 @@ TownApp.registerComponent('detective',({container,mode})=>{
  frame.title='Detektivní kancelář – matematický detektiv';
  frame.setAttribute('loading','eager');
  frame.src=new URL('Detektivni-kancelar.html?mode='+encodeURIComponent(mode),location.href).href;
- frame.style.cssText='display:block;width:100%;height:min(745px,calc(100dvh - 150px));min-height:460px;border:0;border-radius:14px;background:#f5f7f0';
+ frame.style.cssText='display:block;width:100%;height:740px;min-height:550px;border:0;border-radius:12px;background:#f5f7f0';
  container.append(frame);
- return()=>{frame.remove();host.classList.remove('detective-dialog');};
+ // Stejná doména: výška rámu sleduje obsah, aby bylo zadání vidět a stránka neměla dva posuvníky.
+ let observer=null;
+ const resize=()=>{
+   try{
+     const doc=frame.contentDocument;
+     if(!doc)return;
+     const height=Math.max(550,doc.documentElement.scrollHeight,doc.body?.scrollHeight||0);
+     frame.style.height=height+'px';
+   }catch(e){/* záložní výška při nedostupném obsahu rámu */}
+ };
+ frame.addEventListener('load',()=>{
+   resize();
+   try{
+     observer?.disconnect();
+     observer=new ResizeObserver(resize);
+     observer.observe(frame.contentDocument.documentElement);
+     if(frame.contentDocument.body)observer.observe(frame.contentDocument.body);
+   }catch(e){/* rám zůstane s dostupnou výškou */}
+ });
+ return()=>{observer?.disconnect();frame.remove();host.classList.remove('detective-dialog');};
 });
 </script>
 </body>
