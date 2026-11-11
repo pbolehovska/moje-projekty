@@ -14,6 +14,7 @@
 .error-types{min-width:0}.error-types legend{font-weight:750}.type{display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer}.type:has(:checked){background:#e8f4fc}
 #selection-feedback:empty,#type-feedback:empty,#result-feedback:empty{display:none}.answer-fields .field:first-child{margin-top:0}
 .result-fraction{display:grid;gap:4px;width:8rem;text-align:center}.result-fraction input{text-align:center;font-size:1.25rem;font-variant-numeric:tabular-nums}.result-fraction-line{border-top:2px solid currentColor}
+.repair-step{border:1px solid #d5e2d5;border-radius:10px;margin:0 0 14px;padding:10px}.repair-step legend{font-weight:750}.repair-equation{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.repair-step .bad:empty{display:none}
 </style></head><body><main class="layout" id="root"></main><script>
 'use strict';
 const root=document.querySelector('#root');
@@ -36,27 +37,27 @@ const instructions = {
 };
 const assignmentMath = task => math(task.steps[0] + (task.targetUnit ? ' → ' + task.targetUnit : ''));
 const decimal=x=>String(x).replace('.',',');
-const mk=(steps,category,correction,explanation)=>({steps,category,correction,explanation});
+const mk=(steps,category,correction,explanation,intermediate=[])=>({steps,category,correction,explanation,intermediate});
 function generate(level){
  const out=[];const scale={easy:1,medium:2,hard:3}[level];
  for(let i=0;i<4;i++){
    let w=2+scale+i,d=[4,5,8,6][i],n=[3,2,5,5][i],a=w*d+n,incorrect=a+(i%2?2:1);
-   out.push(mk([mixed(w,n,d),fraction(i===3?a:incorrect,d),fraction(i===0||i===3?a:incorrect,d)],i===3?null:'convert',fraction(a,d),'Při převodu na nepravý zlomek vynásobíme celou část jmenovatelem a přičteme čitatele. '+w+' × '+d+' + '+n+' = '+a+'.'));
+   out.push(mk([mixed(w,n,d),fraction(i===3?a:incorrect,d),fraction(i===0||i===3?a:incorrect,d)],i===3?null:'convert',fraction(a,d),'Při převodu na nepravý zlomek vynásobíme celou část jmenovatelem a přičteme čitatele. '+w+' × '+d+' + '+n+' = '+a+'.',i===0?[fraction(a,d)]:[]));
  }
  for(let i=0;i<4;i++){
    let d=[12,16,18,20][i]+(scale-1)*4,n=5+i*2,m=3+i*2,tot=n+m,wrong=tot+(i===3?0:1);
    let result=reduce(tot,d);
-   out.push(mk([fraction(n,d)+' + '+fraction(m,d),fraction(wrong,d),fraction(i===3?result[0]:reduce(wrong,d)[0],i===3?result[1]:reduce(wrong,d)[1])],i===3?null:'add',fraction(...result),'Při sčítání stejných jmenovatelů sečteme pouze čitatele: '+n+' + '+m+' = '+tot+'.'));
+   out.push(mk([fraction(n,d)+' + '+fraction(m,d),fraction(wrong,d),fraction(i===3?result[0]:reduce(wrong,d)[0],i===3?result[1]:reduce(wrong,d)[1])],i===3?null:'add',fraction(...result),'Při sčítání stejných jmenovatelů sečteme pouze čitatele: '+n+' + '+m+' = '+tot+'.',[fraction(tot,d)]));
  }
  for(let i=0;i<4;i++){
    let d=[6,8,10,12][i],a=[2,3,3,5][i],b=[1,3,1,5][i],big=d*2;
    let correctA=a*2, badA=correctA+(i===3?0:1),sum=badA+b,rr=reduce(sum,big);
-   out.push(mk([fraction(a,d)+' + '+fraction(b,big),fraction(badA,big)+' + '+fraction(b,big),fraction(sum,big),fraction(rr[0],rr[1])],i===3?null:'expand',fraction(...reduce(correctA+b,big)),'Při rozšiřování na společného jmenovatele musí být čitatel i jmenovatel násobeny stejným číslem. Správně '+a+' × 2 = '+correctA+'.'));
+   out.push(mk([fraction(a,d)+' + '+fraction(b,big),fraction(badA,big)+' + '+fraction(b,big),fraction(sum,big),fraction(rr[0],rr[1])],i===3?null:'expand',fraction(...reduce(correctA+b,big)),'Při rozšiřování na společného jmenovatele musí být čitatel i jmenovatel násobeny stejným číslem. Správně '+a+' × 2 = '+correctA+'.',[fraction(correctA,big)+' + '+fraction(b,big),fraction(correctA+b,big)]));
  }
  for(let i=0;i<4;i++){
    const nums=[125,375,625,875],n=nums[i]+(scale-1)*100,raw=n/1000;
    let r=reduce(n,1000),wrong=n+(i===3?0:25);
-   out.push(mk([decimal(raw),fraction(wrong,1000),fraction(i===3?r[0]:reduce(wrong,1000)[0],i===3?r[1]:reduce(wrong,1000)[1])],i===3?null:'decimal',fraction(...r),'Číslo se třemi desetinnými místy se zapíše jako počet tisícin: '+n+'/1000. Pak se zlomek zkrátí.'));
+   out.push(mk([decimal(raw),fraction(wrong,1000),fraction(i===3?r[0]:reduce(wrong,1000)[0],i===3?r[1]:reduce(wrong,1000)[1])],i===3?null:'decimal',fraction(...r),'Číslo se třemi desetinnými místy se zapíše jako počet tisícin: '+n+'/1000. Pak se zlomek zkrátí.',[fraction(n,1000)]));
  }
  for(let i=0;i<4;i++){
    let num=[3,5,7,9][i],den=10,base=[100,60,100,100][i],unit=[['m','cm'],['h','min'],['m²','dm²'],['m','cm']][i],proper=(num*base/den),wrong=proper+(i===3?0:(i+1)*2);
@@ -67,10 +68,10 @@ function generate(level){
    let d=[15,24,28,36][i],n=[9,15,21,25][i],k=scale+i+2,x=n*k,y=d*k,r=reduce(n,d);
    if(i===0){
      // Konečný výsledek je správně, ale jeden mezikrok má jinou hodnotu.
-     out.push(mk([fraction(x,y),fraction(n+1,d),fraction(r[0],r[1])],'reduce',fraction(...r),'Při krácení dělíme čitatele i jmenovatele stejným číslem. Prostřední zlomek nemá stejnou hodnotu.'));
+     out.push(mk([fraction(x,y),fraction(n+1,d),fraction(r[0],r[1])],'reduce',fraction(...r),'Při krácení dělíme čitatele i jmenovatele stejným číslem. Prostřední zlomek nemá stejnou hodnotu.',[fraction(n,d)]));
    }else if(i===1){
      let sum=5+scale;
-     out.push(mk([fraction(sum*10,100),fraction(sum+1,10),fraction(...reduce(sum+1,10))],'reduce',fraction(...reduce(sum,10)),'Prostřední zlomek nemá stejnou hodnotu jako první. Poslední zlomek je zkrácením nesprávného mezikroku.'));
+     out.push(mk([fraction(sum*10,100),fraction(sum+1,10),fraction(...reduce(sum+1,10))],'reduce',fraction(...reduce(sum,10)),'Prostřední zlomek nemá stejnou hodnotu jako první. Poslední zlomek je zkrácením nesprávného mezikroku.',[fraction(sum,10)]));
    }else if(i===2){
      out.push(mk([fraction(x,y),fraction(n-1,d),fraction(n-1,d)],'reduce',fraction(...r),'Čitatele a jmenovatele je třeba dělit stejným číslem. Prostřední hodnota není původní zlomek.'));
    }else{
@@ -91,11 +92,12 @@ function generate(level){
 }
 const pool={easy:generate('easy'),medium:generate('medium'),hard:generate('hard')};
 function shuffle(a){let b=a.slice();for(let i=b.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b;}
+let stepEntries={};
 let current=null,level=null,tasks=[],index=0,answers=[],selected='',choice='',fix='',countErrors=0,submitted=false;
 function pick(l){const arr=pool[l],cam=arr.filter(t=>t.camouflage),wrong=arr.filter(t=>t.category&&!t.camouflage),good=arr.filter(t=>!t.category);return shuffle([...cam,...shuffle(wrong).slice(0,10),...shuffle(good).slice(0,3)]);}
 function menu(){root.innerHTML='<div class="head"><div><div class="tasktype">ZLOMKOV · '+modeName+'</div><h1>🕵️ Detektivní kancelář</h1><p class="minor">Prozkoumej každý krok výpočtu. Správný výsledek nemusí znamenat správný postup.</p></div></div><div class="menu">'+[['easy','Lehká','Smíšená čísla, desetinná čísla, sčítání a převody'],['medium','Střední','Vícekrokové postupy, zlomky a jednotky'],['hard','Těžká','Větší čísla a důmyslné početní omyly']].map(([id,n,h])=>'<button class="level" data-level="'+id+'">🔎<b>'+n+'</b><small>'+h+'</small></button>').join('')+'</div><p class="minor">Režim TŘÍDA: společná kontrola. ŽÁK: individuální zpětná vazba. TEST: vyhodnocení až po dokončení.</p>';root.querySelectorAll('[data-level]').forEach(x=>x.addEventListener('click',()=>start(x.dataset.level)));}
 function start(l){level=l;tasks=pick(l);index=0;answers=[];selected='';choice='';fix='';countErrors=0;submitted=false;show();}
-function show(){if(index>=tasks.length){summary();return;}current=tasks[index];selected='';choice='';fix='';submitted=false;render();}
+function show(){if(index>=tasks.length){summary();return;}current=tasks[index];stepEntries={};selected='';choice='';fix='';submitted=false;render();}
 function equation(){
  const parts = [];
  current.steps.forEach((value,i)=>{
@@ -158,6 +160,25 @@ function correctResult(task, input){
  const a=resultValue(given), b=resultValue(expected);
  return Boolean(a&&b&&a[0]*b[1]===b[0]*a[1]);
 }
+function repairSteps(task){
+ if(!task.steps.slice(firstBadIndex(task)+1).some((value,i)=>value!==task.steps[firstBadIndex(task)+i])) return [];
+ return task.intermediate.filter(step=>step!==task.correction);
+}
+function stepFields(task){
+ return repairSteps(task).map((step,i)=>{
+   const fractions=step.match(/\[\[\d+\/\d+\]\]/g);
+   return '<fieldset class="repair-step"><legend>Opravený krok '+(firstBadIndex(task)+i)+'</legend><div class="repair-equation">'+
+     fractions.map((_,j)=>{
+       const key=i+'-'+j;
+       return '<div class="result-fraction"><input type="text" inputmode="numeric" maxlength="30" aria-label="Čitatel zlomku '+(j+1)+'" data-repair="'+key+'-top"><span class="result-fraction-line" aria-hidden="true"></span><input type="text" inputmode="numeric" maxlength="30" aria-label="Jmenovatel zlomku '+(j+1)+'" data-repair="'+key+'-bottom"></div>';
+     }).join('<span aria-hidden="true">+</span>')+'</div><p class="bad" id="repair-feedback-'+i+'" role="status"></p></fieldset>';
+ }).join('');
+}
+function repairMatches(step,i){
+ return [...step.matchAll(/\[\[(\d+)\/(\d+)\]\]/g)].every(([,top,bottom],j)=>
+   BigInt(stepEntries[i+'-'+j+'-top'])===BigInt(top)&&BigInt(stepEntries[i+'-'+j+'-bottom'])===BigInt(bottom)
+ );
+}
 function resultFields(task){
  const attributes='type="text" autocomplete="off" aria-describedby="result-hint result-feedback"';
  const fractionResult=task.correction.startsWith('[[');
@@ -186,7 +207,7 @@ function render(){
      '<label class="type"><input type="radio" name="error-type" data-type="'+key+'" '+(choice===key?'checked':'')+'> '+label+'</label>'
    ).join('')+'</div><p class="minor" id="type-feedback" role="status">'+(choice&&!mayCorrect?'Zkus jinou možnost.':'')+'</p></fieldset>':''}
    ${isGood||mayCorrect?
-     '<section class="box answer-fields">'+(mayCorrect?resultFields(current):'')+
+     '<section class="box answer-fields">'+(mayCorrect?stepFields(current)+resultFields(current):'')+
      '<div class="controls"><button class="primary" id="submit" disabled>Odevzdat odpověď</button></div></section>':''}
    <div id="feedback"></div>`;
  root.querySelector('#back').onclick=menu;
@@ -213,18 +234,30 @@ function render(){
  root.querySelectorAll('[data-type]').forEach(option=>option.onchange=()=>{
    choice=option.dataset.type;
    render();
-   root.querySelector(choice===current.category?'#fix':'[data-type="'+choice+'"]')?.focus({preventScroll:true});
+   root.querySelector(choice===current.category?(repairSteps(current).length?'[data-repair]':'#fix'):'[data-type="'+choice+'"]')?.focus({preventScroll:true});
  });
  const inp=root.querySelector('#fix'), denominator=root.querySelector('#fix-denominator'), btn=root.querySelector('#submit');
  if(!btn) return;
+ const repairInputs=[...root.querySelectorAll('[data-repair]')];
  function updateSubmit(){
    const complete=denominator
      ? /^-?\d+$/.test(inp.value.trim())&&/^\d+$/.test(denominator.value.trim())&&/[1-9]/.test(denominator.value)
      : fix.trim();
-   btn.disabled=!(isGood||complete);
+   const repaired=repairInputs.every(input=>/^\d+$/.test(input.value.trim())&&
+     (!input.dataset.repair.endsWith('-bottom')||/[1-9]/.test(input.value)));
+   btn.disabled=!(isGood||(complete&&repaired));
  }
 
 
+ for(const input of repairInputs){
+   const key=input.dataset.repair;
+   input.value=stepEntries[key]||'';
+   input.oninput=()=>{
+     stepEntries[key]=input.value.trim();
+     root.querySelector('#repair-feedback-'+key.split('-')[0]).textContent='';
+     updateSubmit();
+   };
+ }
  if(inp){
    if(denominator){
      const [top,bottom='']=fix.split('/');
@@ -251,7 +284,15 @@ function submit(){
  const located=(current.category===null?selected==='correct':selected===String(firstBadIndex(current)));
  const typed=(!current.category&&selected==='correct')||(current.category&&choice===current.category);
  if(!located||!typed||root.querySelector('#submit').disabled) return;
- if(current.category&&!correctResult(current,fix)){
+ const repaired=current.category?repairSteps(current):[];
+ const wrongStep=repaired.findIndex((step,i)=>!repairMatches(step,i));
+ if(wrongStep!==-1){
+   root.querySelector('#repair-feedback-'+wrongStep).textContent='Zkontroluj čitatele a jmenovatele v tomto kroku.';
+   root.querySelector('[data-repair="'+wrongStep+'-0-top"]').focus();
+   return;
+ }
+ const exactFinal=!repaired.length||fix.split('/').map(value=>String(BigInt(value))).join('/')===current.correction.slice(2,-2);
+ if(current.category&&(!correctResult(current,fix)||!exactFinal)){
    const input=root.querySelector('#fix');
    input.setAttribute('aria-invalid','true');
    root.querySelector('#fix-denominator')?.setAttribute('aria-invalid','true');
@@ -261,13 +302,13 @@ function submit(){
  }
  submitted=true;
  const correct=true;
- const data={id:current.id,steps:current.steps,instruction:current.instruction,targetUnit:current.targetUnit,located,typed,choice,selected,fix,category:current.category,correction:current.correction,explanation:current.explanation,correct};
+ const data={id:current.id,steps:current.steps,instruction:current.instruction,targetUnit:current.targetUnit,located,typed,choice,selected,fix,repaired,category:current.category,correction:current.correction,explanation:current.explanation,correct};
  answers.push(data);
  if(!correct)countErrors++;
  const fb=root.querySelector('#feedback');
  fb.innerHTML=(mode==='test'?'<div class="notice">Odpověď uložena. Vyhodnocení se zobrazí po dokončení všech 15 případů.</div>':'<div class="notice '+(correct?'':'warn')+'"><b>'+(correct?'Místo a typ jsou správně.':'Tvoje označení není úplně správně.')+'</b><p>'+(current.category?'První chybný krok je číslo '+(firstBadIndex(current))+'. Typ: '+labels[current.category]+'.':'Celý postup je správný.')+'</p><p>'+current.explanation+'</p>'+(current.category?'<p>Správný výsledek: <b>'+math(current.correction)+'</b></p>':'')+'<p class="minor">Svůj výsledek můžeš porovnat se vzorem.</p></div>');
  const next=document.createElement('button');next.className='primary';next.textContent=index===14?'Zobrazit vyhodnocení':'Další případ →';next.onclick=()=>{index++;show()};fb.append(next);
- root.querySelectorAll('.step,[data-type],#correct,#fix,#fix-denominator,#submit').forEach(x=>x.disabled=true);
+ root.querySelectorAll('.step,[data-type],[data-repair],#correct,#fix,#fix-denominator,#submit').forEach(x=>x.disabled=true);
  if(mode==='student'&&countErrors>=5){const note=document.createElement('p');note.className='notice warn';note.textContent='Pět nesprávně označených případů. Podle pravidel režimu ŽÁK můžeš začít nové kolo.';fb.append(note);}
 }
 function firstBadIndex(t){
@@ -277,7 +318,7 @@ function firstBadIndex(t){
 }
 function summary(){
  const scored=answers.filter(a=>a.correct).length;
- root.innerHTML='<div class="box"><div class="tasktype">DETEKTIVNÍ KANCELÁŘ · '+modeName+'</div><h1>Vyšetřování dokončeno</h1><div class="score">'+scored+' / 15</div><p>Zkontrolováno bylo místo a druh chyby i opravený výsledek.</p><div class="controls"><button class="primary" id="again">Nová sada 15 případů</button><button class="soft" id="levels">Změnit obtížnost</button><button class="soft" id="print">Vytisknout přehled</button></div><h2>Protokol případů</h2>'+answers.map((a,i)=>'<div class="summary"><b>'+(i+1)+'. '+(a.correct?'✓':'✗')+' '+(a.category?labels[a.category]:'Bez chyby')+'</b><p>'+a.instruction+' <span class="math">'+assignmentMath(a)+'</span></p><p class="small">Postup <span class="math">'+math(a.steps[0])+a.steps.slice(1).map((value,i)=>value===a.steps[i]?'':' = '+math(value)).join('')+'</span></p>'+(a.fix?'<p><b>Výsledek žáka:</b> '+escapeHTML(a.fix)+'</p>':'')+'<p><b>Vzor:</b> '+a.explanation+(a.category?' Správně: '+math(a.correction):'')+'</p></div>').join('')+'</div>';
+ root.innerHTML='<div class="box"><div class="tasktype">DETEKTIVNÍ KANCELÁŘ · '+modeName+'</div><h1>Vyšetřování dokončeno</h1><div class="score">'+scored+' / 15</div><p>Zkontrolováno bylo místo a druh chyby i opravený výsledek.</p><div class="controls"><button class="primary" id="again">Nová sada 15 případů</button><button class="soft" id="levels">Změnit obtížnost</button><button class="soft" id="print">Vytisknout přehled</button></div><h2>Protokol případů</h2>'+answers.map((a,i)=>'<div class="summary"><b>'+(i+1)+'. '+(a.correct?'✓':'✗')+' '+(a.category?labels[a.category]:'Bez chyby')+'</b><p>'+a.instruction+' <span class="math">'+assignmentMath(a)+'</span></p><p class="small">Postup <span class="math">'+math(a.steps[0])+a.steps.slice(1).map((value,i)=>value===a.steps[i]?'':' = '+math(value)).join('')+'</span></p>'+(a.repaired.length?'<p><b>Opravené kroky</b> '+a.repaired.map(math).join(' = ')+'</p>':'')+(a.fix?'<p><b>Výsledek žáka:</b> '+escapeHTML(a.fix)+'</p>':'')+'<p><b>Vzor:</b> '+a.explanation+(a.category?' Správně: '+math(a.correction):'')+'</p></div>').join('')+'</div>';
  root.querySelector('#again').onclick=()=>start(level);
  root.querySelector('#levels').onclick=menu;
  root.querySelector('#print').onclick=()=>window.print();
