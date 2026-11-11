@@ -17,6 +17,42 @@
 .repair-row,.repair-equation{display:flex;gap:10px;align-items:center}.repair-row{overflow-x:auto;padding:5px;font-size:clamp(1.15rem,2.5vw,1.65rem)}.repair-row>*{flex:none}.repair-row .result-fraction{width:clamp(3.6rem,9vw,6rem)}.repair-feedback:empty{display:none}
 .result-group{display:flex;gap:8px;align-items:center}.result-group #fix-whole{width:4rem;text-align:center}.equation.long-equation{flex-wrap:nowrap;overflow-x:auto}.long-equation .equation-part{flex:none}
 .board-tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:12px;margin-top:14px}.board-tools summary{display:inline-grid;place-items:center;list-style:none;min-width:50px;min-height:46px;background:white;border:1px solid #aebfb1;border-radius:10px;font-size:24px;cursor:pointer}.board-tools summary::-webkit-details-marker{display:none}.board-tools details[open] summary{background:#e5eee2}.tool-panel{background:white;border:1px solid #d5e2d5;border-radius:12px;margin-top:6px;padding:12px}.tool-panel h3{margin:0 0 8px;font-size:1rem}.calculator-form{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.calculator-form input{width:7rem;max-width:100%}.calculator-form select{font:inherit;padding:8px}.calculator-form output{flex-basis:100%;font-weight:750;overflow-wrap:anywhere}.board-keypad{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}.board-keypad button{padding:5px;min-height:46px}.board-keypad button:last-child{grid-column:span 2}.tool-panel .minor:empty{display:none}@media(max-width:680px){.board-tools{grid-template-columns:1fr}}
+
+.calculation-track{display:flex;align-items:center;gap:inherit}
+.equation:not(.long-equation) .calculation-track{flex-wrap:wrap}
+.calculation-track>*{flex:none}
+@media(min-width:850px){
+ body:has(.case-screen){padding:8px 12px;overflow:hidden}
+ .layout:has(.case-screen){max-width:1500px}
+ .case-screen{display:flow-root}
+ .case-screen .head{gap:8px}.case-screen h2{margin:3px 0;font-size:1.35rem}
+ .case-screen .progress{height:6px;margin:6px 0 8px}
+ .case-screen .box{margin:7px 0;padding:8px 12px}
+ .case-screen .equation,.case-screen .repair-row{overflow:visible}
+ .case-screen .equation:not(.long-equation) .calculation-track{flex-wrap:nowrap}
+ .case-screen .equation .step{min-height:43px;padding:4px}
+ .case-screen .check{padding:6px 10px;min-height:36px}
+ .case-screen .types{grid-template-columns:repeat(3,minmax(0,1fr));gap:2px 8px}
+ .case-screen .type{min-height:34px;padding:3px 6px;line-height:1.2}
+ .case-screen .field,.case-screen .minor,.case-screen .bad{margin:4px 0}
+ .case-screen .repair-row{padding:2px 0;gap:7px}
+ .case-screen .repair-equation{gap:6px}
+ .case-screen .repair-row .result-fraction{width:clamp(2.6rem,5vw,4.6rem)}
+ .case-screen .repair-row input{padding:4px;min-height:32px}
+ .case-screen .controls{margin-top:5px}
+ .case-screen .board-tools{margin-top:6px;gap:8px}
+ .case-screen .tool-panel{margin-top:3px;padding:6px 8px}
+ .case-screen .tool-panel h3{margin:0 0 4px}
+ .case-screen .board-tools summary{min-height:36px;font-size:20px}
+ .case-screen .board-keypad{grid-template-columns:repeat(8,minmax(0,1fr));gap:3px}
+ .case-screen .board-keypad button{min-height:34px;padding:2px}
+ .case-screen .board-keypad button:last-child{grid-column:auto;font-size:.75rem}
+ .case-screen .calculator-form input{padding:5px}
+ .case-screen .calculator-form button{min-height:34px;padding:4px 12px}
+ .case-screen #feedback:not(:empty){display:flex;gap:8px;align-items:center;margin-top:6px}
+ .case-screen #feedback .notice{flex:1;margin:0;padding:6px 9px;line-height:1.25}
+ .case-screen #feedback .notice p{margin:2px 0}
+}
 </style></head><body><main class="layout" id="root"></main><script>
 'use strict';
 const root=document.querySelector('#root');
@@ -287,7 +323,7 @@ function resultFields(task){
  const steps=repairSteps(task);
  const prefix=task.steps.slice(0,firstBadIndex(task)).map(value=>'<span class="math">'+math(value)+'</span>').join('<span class="eq" aria-hidden="true">=</span>');
  return '<h3 class="field" id="result-title">'+(steps.length?'Opravený postup':'Správný výsledek')+(task.targetUnit?' v '+task.targetUnit:'')+'</h3>'+
-   '<div class="repair-row">'+prefix+stepFields(task)+'<span class="eq" aria-hidden="true">=</span><div class="result-group" role="group" aria-label="Správný výsledek">'+(mixedResult?'<input id="fix-whole" '+attributes+' inputmode="numeric" maxlength="30" aria-label="Celá část">':'')+inputs+'</div></div>'+
+   '<div class="repair-row"><div class="calculation-track">'+prefix+stepFields(task)+'<span class="eq" aria-hidden="true">=</span><div class="result-group" role="group" aria-label="Správný výsledek">'+(mixedResult?'<input id="fix-whole" '+attributes+' inputmode="numeric" maxlength="30" aria-label="Celá část">':'')+inputs+'</div></div></div>'+
    '<p class="minor" id="result-hint">'+hint+'</p>'+
    steps.map((_,i)=>'<p class="bad repair-feedback" id="repair-feedback-'+i+'" role="status"></p>').join('')+
    '<p class="bad" id="result-feedback" role="status"></p>';
@@ -360,18 +396,44 @@ function bindBoardTools(){
    };
  });
 }
+function fitCaseScreen(){
+ const screen=root.querySelector('.case-screen');
+ if(!screen) return;
+ screen.style.zoom='';
+ const tracks=[...screen.querySelectorAll('.calculation-track')];
+ for(const track of tracks) track.style.zoom='';
+ if(!window.matchMedia('(min-width: 850px)').matches) return;
+ for(const track of tracks){
+   const row=track.parentElement;
+   const style=getComputedStyle(row);
+   const available=row.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight);
+   if(track.scrollWidth>available) track.style.zoom=(available-2)/track.scrollWidth;
+ }
+ const availableHeight=document.documentElement.clientHeight-screen.getBoundingClientRect().top-8;
+ const height=screen.getBoundingClientRect().height;
+ if(height>availableHeight) screen.style.zoom=Math.max(1,availableHeight-2)/height;
+}
+let fitFrame=0;
+function scheduleFit(){
+ cancelAnimationFrame(fitFrame);
+ fitFrame=requestAnimationFrame(fitCaseScreen);
+}
+const caseChanges=new MutationObserver(scheduleFit);
+caseChanges.observe(root,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['open']});
+window.addEventListener('resize',scheduleFit);
 function render(){
  const isGood = selected==='correct';
  const hasError = current.category && selected===String(firstBadIndex(current));
  const mayCorrect = hasError && choice===current.category;
  root.innerHTML=`
+   <div class="case-screen">
    <div class="head">
      <div><div class="tasktype">DETEKTIVNÍ KANCELÁŘ · ${modeName} · ${{easy:'Lehká',medium:'Střední',hard:'Těžká'}[level]}</div>
        <h2>Případ ${index+1} z 15</h2></div>
      <button id="back" class="soft">← Výběr obtížnosti</button>
    </div>
    <div class="progress"><div class="bar" style="width:${Math.round(index/15*100)}%"></div></div>
-   <section class="box assignment equation ${level==='hard'?'long-equation':''}" aria-label="Příklad a výpočet">${equation()}</section>
+   <section class="box assignment equation ${level==='hard'?'long-equation':''}" aria-label="Příklad a výpočet"><div class="calculation-track">${equation()}</div></section>
    <label class="check"><input id="correct" type="checkbox" ${isGood?'checked':''}><span>Celý postup je správný</span></label>
    <p class="minor" id="selection-feedback" role="status"></p>
    ${hasError?'<fieldset class="box error-types"><legend>V čem je chyba?</legend><div class="types">'+Object.entries(labels).map(([key,label])=>
@@ -381,8 +443,10 @@ function render(){
      '<section class="box answer-fields">'+(mayCorrect?resultFields(current):'')+
      '<div class="controls"><button class="primary" id="submit" disabled>Odevzdat odpověď</button></div></section>':''}
    ${boardTools()}
-   <div id="feedback"></div>`;
+   <div id="feedback"></div>
+   </div>`;
  bindBoardTools();
+ fitCaseScreen();
  root.querySelector('#back').onclick=menu;
  root.querySelectorAll('[data-step]').forEach(button=>button.onclick=()=>{
    if(!current.category||button.dataset.step!==String(firstBadIndex(current))){

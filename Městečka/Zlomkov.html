@@ -1232,29 +1232,10 @@ TownApp.registerComponent('detective',({container,mode})=>{
  const frame=document.createElement('iframe');
  frame.title='Detektivní kancelář – matematický detektiv';
  frame.setAttribute('loading','eager');
- frame.src=new URL('Detektivni-kancelar.html?rev=20261111k&mode='+encodeURIComponent(mode),location.href).href;
+ frame.src=new URL('Detektivni-kancelar.html?rev=20261111l&mode='+encodeURIComponent(mode),location.href).href;
  frame.style.cssText='display:block;width:100%;height:740px;min-height:550px;border:0;border-radius:12px;background:#f5f7f0';
  container.append(frame);
- // Stejná doména: výška rámu sleduje obsah, aby bylo zadání vidět a stránka neměla dva posuvníky.
- let observer=null;
- const resize=()=>{
-   try{
-     const doc=frame.contentDocument;
-     if(!doc)return;
-     const height=Math.max(550,doc.documentElement.scrollHeight,doc.body?.scrollHeight||0);
-     frame.style.height=height+'px';
-   }catch(e){/* záložní výška při nedostupném obsahu rámu */}
- };
- frame.addEventListener('load',()=>{
-   resize();
-   try{
-     observer?.disconnect();
-     observer=new ResizeObserver(resize);
-     observer.observe(frame.contentDocument.documentElement);
-     if(frame.contentDocument.body)observer.observe(frame.contentDocument.body);
-   }catch(e){/* rám zůstane s dostupnou výškou */}
- });
- return()=>{observer?.disconnect();frame.remove();host.classList.remove('detective-dialog');};
+ return()=>{frame.remove();host.classList.remove('detective-dialog');};
 });
 </script>
 </body>
