@@ -2,6 +2,7 @@
 <html lang="cs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Detektivní kancelář · Zlomkov</title><style>
 :root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#173f45;background:#f5f7f0}*{box-sizing:border-box}body{margin:0;padding:16px}button,input,textarea{font:inherit}button{cursor:pointer;border-radius:12px;border:1.5px solid #c7d7cb;padding:11px 13px;min-height:45px;background:#fff;color:#173f45}button:focus-visible,textarea:focus-visible,input:focus-visible{outline:3px solid #e6a146;outline-offset:2px}button:disabled{opacity:.5;cursor:not-allowed}.primary{background:#173f45;color:white;font-weight:750}.soft{background:#e5eee2}.layout{max-width:1020px;margin:auto}.head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.menu{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:20px 0}.level{background:#ecf2e5;padding:24px 12px;min-height:155px}.level b{display:block;font-size:25px;margin:8px 0}.minor{font-size:13px;color:#5d766d;line-height:1.6}.box{background:white;border:1px solid #d5e2d5;border-radius:18px;padding:18px;margin-top:12px}.progress{height:9px;background:#dae5d9;border-radius:10px;overflow:hidden;margin:13px 0 19px}.bar{height:100%;background:#52977d}.steps{display:flex;flex-wrap:wrap;gap:9px;align-items:stretch;margin:20px 0}.step{display:flex;align-items:center;gap:6px;padding:13px 12px;min-height:78px;flex:1 1 auto;border:2px solid #c8d7c9;font-size:20px;background:#fffdf8;justify-content:center;white-space:nowrap}.step[aria-pressed=true],.type[aria-pressed=true]{border:2px solid #1671a8;background:#e8f4fc}.fraction{display:inline-flex;flex-direction:column;align-items:stretch;text-align:center;vertical-align:middle;line-height:1.02;min-width:22px;font-variant-numeric:tabular-nums}.fraction .n{border-bottom:2.7px solid #173f45;padding:1px 4px 4px}.fraction .d{padding:4px 4px 1px}.mixed{display:inline-flex;gap:3px;align-items:center}.math{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}.eq{font-weight:800;color:#5a756a}.types{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.field{display:block;font-weight:750;margin:18px 0 7px}input[type=text],textarea{display:block;width:100%;border:1.5px solid #b2c6b7;border-radius:11px;padding:11px;color:#173f45}textarea{height:115px;resize:vertical}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.notice{background:#e8f1e4;padding:14px;border-radius:12px;margin:12px 0;line-height:1.55}.warn{background:#fff1d9}.score{font-size:26px;font-weight:800}.check{display:flex;gap:10px;align-items:center;padding:13px;border-radius:11px;background:#e8f1e4}.check input{width:20px;height:20px}.tasktype{font-size:12px;font-weight:800;letter-spacing:1px;color:#698176}.small{font-size:13px;color:#58746a}.controls{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px}.summary{padding:8px 0;border-bottom:1px solid #e2e9df}.summary p{margin:5px 0}.bad{color:#a34035}.good{color:#276b42}@media(max-width:650px){body{padding:8px}.menu{grid-template-columns:1fr}.level{min-height:85px}.box{padding:12px}.types{grid-template-columns:1fr}.step{font-size:17px;min-height:70px;padding:8px}}
+.assignment{background:#fff1c9;border:2px solid #ca962e}.assignment h3{margin:0 0 6px}.assignment p{margin:0 0 12px}.assignment .math{font-size:clamp(1.5rem,4vw,2.25rem);font-weight:650;gap:.3em}.steps .math{gap:.3em}.steps .given{display:flex;align-items:center;justify-content:center;padding:10px;font-size:inherit}.step .math{gap:.3em}.summary .math{flex-wrap:wrap;white-space:normal}
 </style></head><body><main class="layout" id="root"></main><script>
 'use strict';
 const root=document.querySelector('#root');
@@ -14,7 +15,15 @@ const mixed=(w,n,d)=>'[['+w+';'+n+'/'+d+']]';
 const reduce=(n,d)=>{let g=gcd(n,d);return[n/g,d/g]};
 const math=(s)=>String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replace(/\[\[(\d+);(\d+)\/(\d+)\]\]/g,(_,w,n,d)=>'<span class="mixed">'+w+'<span class="fraction"><span class="n">'+n+'</span><span class="d">'+d+'</span></span></span>').replace(/\[\[(\d+)\/(\d+)\]\]/g,(_,n,d)=>'<span class="fraction"><span class="n">'+n+'</span><span class="d">'+d+'</span></span>');
 const labels={convert:'Nesprávný převod smíšeného čísla',expand:'Chybné rozšíření zlomku',add:'Chyba při sčítání či odčítání',denominator:'Nesprávná práce se jmenovateli',reduce:'Chybné krácení',decimal:'Chybný převod desetinného čísla',units:'Chyba při převodu jednotek',arithmetic:'Početní chyba v násobení či dělení',compare:'Chybné porovnání'};
-const pretty=(x)=>x.replace(/\[\[(\d+);(\d+)\/(\d+)\]\]/g,'$1 $2/$3').replace(/\[\[(\d+)\/(\d+)\]\]/g,'$1/$2');
+const instructions = {
+ convert: 'Převeď smíšené číslo na nepravý zlomek.',
+ add: 'Sečti zlomky.',
+ expand: 'Sečti zlomky s různými jmenovateli.',
+ decimal: 'Zapiš desetinné číslo jako zlomek.',
+ units: 'Převeď na uvedenou jednotku.',
+ reduce: 'Zkrať zlomek na základní tvar.'
+};
+const assignmentMath = task => math(task.steps[0] + (task.targetUnit ? ' → ' + task.targetUnit : ''));
 const decimal=x=>String(x).replace('.',',');
 const mk=(steps,category,correction,explanation)=>({steps,category,correction,explanation});
 function generate(level){
@@ -50,7 +59,7 @@ function generate(level){
      out.push(mk([fraction(x,y),fraction(n+1,d),fraction(r[0],r[1])],'reduce',fraction(n,d),'Při krácení dělíme čitatele i jmenovatele stejným číslem. Prostřední zlomek nemá stejnou hodnotu.'));
    }else if(i===1){
      let sum=(5+scale)*10;
-     out.push(mk([fraction(sum,100),fraction(sum+10,100),fraction(reduce(sum+10,100)[0],reduce(sum+10,100)[1])],'reduce',fraction(sum,100),'Prostřední zlomek nemá stejnou hodnotu jako první, i když poslední výsledek odpovídá zadání.'));
+     out.push(mk([fraction(sum,100),fraction(sum+10,100),fraction(reduce(sum+10,100)[0],reduce(sum+10,100)[1])],'reduce',fraction(sum,100),'Prostřední zlomek nemá stejnou hodnotu jako první. Poslední zlomek je zkrácením nesprávného mezikroku.'));
    }else if(i===2){
      out.push(mk([fraction(x,y),fraction(n-1,d),fraction(n-1,d)],'reduce',fraction(n,d),'Čitatele a jmenovatele je třeba dělit stejným číslem. Prostřední hodnota není původní zlomek.'));
    }else{
@@ -61,7 +70,14 @@ function generate(level){
  // Závěrečné úlohy jsou opravovány tak, aby byla chyba jen tam, kde má být.
  out[0].steps[2]=fraction(out[0].steps[0].match(/\[\[(\d+);(\d+)\/(\d+)\]\]/)[1]*1*([4,5,8,6][0])+3,4);
  // Přesný poměr: 4 rodiny po 3 chybných, pátá po 3, šestá po 3 = 18; 6 bez chyby.
- return out.map((t,i)=>({...t,id:level+'-'+(i+1),camouflage:i===0||i===20}));
+ const kinds = Object.keys(instructions);
+ return out.map((t,i)=>({
+   ...t,
+   id:level+'-'+(i+1),
+   instruction:instructions[kinds[Math.floor(i/4)]],
+   targetUnit:i>=16&&i<20?['cm','min','dm²','cm'][i-16]:null,
+   camouflage:i===0||i===20
+ }));
 }
 const pool={easy:generate('easy'),medium:generate('medium'),hard:generate('hard')};
 function shuffle(a){let b=a.slice();for(let i=b.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b;}
@@ -72,7 +88,7 @@ function start(l){level=l;tasks=pick(l);index=0;answers=[];selected='';choice=''
 function show(){if(index>=tasks.length){summary();return;}current=tasks[index];selected='';choice='';reason='';fix='';submitted=false;render();}
 function render(){
  const isGood=selected==='correct';
- root.innerHTML='<div class="head"><div><div class="tasktype">DETEKTIVNÍ KANCELÁŘ · '+modeName+' · '+({easy:'Lehká',medium:'Střední',hard:'Těžká'}[level])+'</div><h2>Případ '+(index+1)+' z 15</h2></div><button id="back" class="soft">← Výběr obtížnosti</button></div><div class="progress"><div class="bar" style="width:'+Math.round(index/15*100)+'%"></div></div><section class="box"><p><b>1. Klikni přímo na krok, ve kterém vznikla první chyba.</b></p><p class="minor">Každé tlačítko představuje jeden člen celého řetězce rovností. Označ člen, který už neodpovídá předchozímu. Můžeš také označit celý postup za správný.</p><div class="steps">'+current.steps.map((v,i)=>'<button class="step" data-step="'+i+'" aria-pressed="'+(selected===String(i))+'"><span class="math">'+(i?'<span class="eq">=</span>':'')+math(v)+'</span></button>').join('')+'</div><label class="check"><input id="correct" type="checkbox" '+(isGood?'checked':'')+'><span>Celý postup je správný</span></label>'+(selected!==''?'<hr><p><b>2. '+(isGood?'Zdůvodni správnost celého postupu.':'Jaký typ chyby jsi našel?')+'</b></p>':'')+(!isGood&&selected!==''?'<div class="types">'+Object.entries(labels).map(([v,t])=>'<button class="type" data-type="'+v+'" aria-pressed="'+(choice===v)+'">'+t+'</button>').join('')+'</div>':'')+(selected!==''&&(isGood||choice)?'<label class="field" for="reason">3. Vysvětli vlastními slovy své rozhodnutí</label><textarea id="reason" placeholder="Který výpočet nebo pravidlo sis ověřil/a?"></textarea>'+(isGood?'':'<label class="field" for="fix">4. Zapiš správný mezikrok nebo opravený výsledek</label><input id="fix" type="text" placeholder="Například 27/8 nebo 3 3/8">')+'<div class="controls"><button class="primary" id="submit" disabled>Odevzdat odpověď</button></div>':'')+'<div id="feedback"></div></section>';
+ root.innerHTML='<div class="head"><div><div class="tasktype">DETEKTIVNÍ KANCELÁŘ · '+modeName+' · '+({easy:'Lehká',medium:'Střední',hard:'Těžká'}[level])+'</div><h2>Případ '+(index+1)+' z 15</h2></div><button id="back" class="soft">← Výběr obtížnosti</button></div><div class="progress"><div class="bar" style="width:'+Math.round(index/15*100)+'%"></div></div><section class="box assignment" aria-labelledby="assignment-title"><h3 id="assignment-title">Původní zadání</h3><p>'+current.instruction+'</p><div class="math">'+assignmentMath(current)+'</div></section><section class="box" aria-labelledby="steps-title"><h3 id="steps-title">Postup k prověření</h3><p><b>1. Klikni přímo na krok, ve kterém vznikla první chyba.</b></p><p class="minor">Vyber první člen, který nemá stejnou hodnotu jako předchozí. Můžeš také označit celý postup za správný.</p><div class="steps">'+current.steps.map((v,i)=>i===0?'<span class="math given">'+math(v)+'</span>':'<button class="step" data-step="'+i+'" aria-pressed="'+(selected===String(i))+'"><span class="math">'+'<span class="eq">=</span>'+math(v)+'</span></button>').join('')+'</div><label class="check"><input id="correct" type="checkbox" '+(isGood?'checked':'')+'><span>Celý postup je správný</span></label>'+(selected!==''?'<hr><p><b>2. '+(isGood?'Zdůvodni správnost celého postupu.':'Jaký typ chyby jsi našel?')+'</b></p>':'')+(!isGood&&selected!==''?'<div class="types">'+Object.entries(labels).map(([v,t])=>'<button class="type" data-type="'+v+'" aria-pressed="'+(choice===v)+'">'+t+'</button>').join('')+'</div>':'')+(selected!==''&&(isGood||choice)?'<label class="field" for="reason">3. Vysvětli vlastními slovy své rozhodnutí</label><textarea id="reason" placeholder="Který výpočet nebo pravidlo sis ověřil/a?"></textarea>'+(isGood?'':'<label class="field" for="fix">4. Zapiš správný mezikrok nebo opravený výsledek</label><input id="fix" type="text" placeholder="Například 27/8 nebo 3 3/8">')+'<div class="controls"><button class="primary" id="submit" disabled>Odevzdat odpověď</button></div>':'')+'<div id="feedback"></div></section>';
  root.querySelector('#back').onclick=menu;
  root.querySelectorAll('[data-step]').forEach(x=>x.onclick=()=>{selected=x.dataset.step;choice='';render()});
  root.querySelector('#correct').onchange=e=>{selected=e.target.checked?'correct':'';choice='';render()};
@@ -87,7 +103,7 @@ function submit(){
  const located=(current.category===null?selected==='correct':selected===String(firstBadIndex(current)));
  const typed=(!current.category&&selected==='correct')||(current.category&&choice===current.category);
  const correct=located&&typed;
- const data={id:current.id,steps:current.steps,located,typed,choice,selected,reason,fix,category:current.category,correction:current.correction,explanation:current.explanation,correct};
+ const data={id:current.id,steps:current.steps,instruction:current.instruction,targetUnit:current.targetUnit,located,typed,choice,selected,reason,fix,category:current.category,correction:current.correction,explanation:current.explanation,correct};
  answers.push(data);
  if(!correct)countErrors++;
  const fb=root.querySelector('#feedback');
@@ -103,7 +119,7 @@ function firstBadIndex(t){
 }
 function summary(){
  const scored=answers.filter(a=>a.correct).length;
- root.innerHTML='<div class="box"><div class="tasktype">DETEKTIVNÍ KANCELÁŘ · '+modeName+'</div><h1>Vyšetřování dokončeno</h1><div class="score">'+scored+' / 15</div><p>Vyhodnoceno je správné označení místa a druhu chyby. Slovní vysvětlení a opravené postupy slouží k následné kontrole.</p><div class="controls"><button class="primary" id="again">Nová sada 15 případů</button><button class="soft" id="levels">Změnit obtížnost</button><button class="soft" id="print">Vytisknout přehled</button></div><h2>Protokol případů</h2>'+answers.map((a,i)=>'<div class="summary"><b>'+(i+1)+'. '+(a.correct?'✓':'✗')+' '+(a.category?labels[a.category]:'Bez chyby')+'</b><p class="small">Zadání: '+a.steps.map(pretty).join(' = ')+'</p><p><b>Zdůvodnění žáka:</b> '+escapeHTML(a.reason)+'</p>'+(a.category?'<p><b>Oprava žáka:</b> '+escapeHTML(a.fix)+'</p>':'')+'<p><b>Vzor:</b> '+a.explanation+(a.category?' Správně: '+math(a.correction):'')+'</p></div>').join('')+'</div>';
+ root.innerHTML='<div class="box"><div class="tasktype">DETEKTIVNÍ KANCELÁŘ · '+modeName+'</div><h1>Vyšetřování dokončeno</h1><div class="score">'+scored+' / 15</div><p>Vyhodnoceno je správné označení místa a druhu chyby. Slovní vysvětlení a opravené postupy slouží k následné kontrole.</p><div class="controls"><button class="primary" id="again">Nová sada 15 případů</button><button class="soft" id="levels">Změnit obtížnost</button><button class="soft" id="print">Vytisknout přehled</button></div><h2>Protokol případů</h2>'+answers.map((a,i)=>'<div class="summary"><b>'+(i+1)+'. '+(a.correct?'✓':'✗')+' '+(a.category?labels[a.category]:'Bez chyby')+'</b><p>'+a.instruction+' <span class="math">'+assignmentMath(a)+'</span></p><p class="small">Postup <span class="math">'+a.steps.map(math).join(' = ')+'</span></p><p><b>Zdůvodnění žáka:</b> '+escapeHTML(a.reason)+'</p>'+(a.fix?'<p><b>Oprava žáka:</b> '+escapeHTML(a.fix)+'</p>':'')+'<p><b>Vzor:</b> '+a.explanation+(a.category?' Správně: '+math(a.correction):'')+'</p></div>').join('')+'</div>';
  root.querySelector('#again').onclick=()=>start(level);
  root.querySelector('#levels').onclick=menu;
  root.querySelector('#print').onclick=()=>window.print();
