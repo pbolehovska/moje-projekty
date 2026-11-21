@@ -266,7 +266,7 @@ const pool={
 };
 function shuffle(a){let b=a.slice();for(let i=b.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b;}
 let stepEntries={};
-let current=null,level=null,tasks=[],index=0,answers=[],selected='',choice='',fix='',countErrors=0,submitted=false;
+let current=null,level=null,tasks=[],index=0,answers=[],selected='',choice='',fix='',countErrors=0,submitted=false,totalErrors=0,restarts=0,startedAt=0;
 const seenByLevel={easy:new Set(),medium:new Set(),hard:new Set()};
 function pick(l){
  const seen=seenByLevel[l];
@@ -286,7 +286,7 @@ function pick(l){
  return set;
 }
 function menu(){root.innerHTML='<div class="head"><div><div class="tasktype">ZLOMKOV · '+modeName+'</div><h1>🕵️ Detektivní kancelář</h1><p class="minor">Prozkoumej každý krok výpočtu. Správný výsledek nemusí znamenat správný postup.</p></div></div><div class="menu">'+[['easy','Lehká','Smíšená čísla, desetinná čísla, sčítání a převody'],['medium','Střední','Delší výpočty se zlomky, smíšenými čísly a jednotkami'],['hard','Těžká','Větší čísla a důmyslné početní omyly']].map(([id,n,h])=>'<button class="level" data-level="'+id+'">🔎<b>'+n+'</b><small>'+h+'</small></button>').join('')+'</div><p class="minor">Režim TŘÍDA: společná kontrola. ŽÁK: individuální zpětná vazba. TEST: vyhodnocení až po dokončení.</p>';root.querySelectorAll('[data-level]').forEach(x=>x.addEventListener('click',()=>start(x.dataset.level)));}
-function start(l){level=l;tasks=pick(l);index=0;answers=[];selected='';choice='';fix='';countErrors=0;submitted=false;show();}
+function start(l,preserve=false){level=l;if(!preserve){totalErrors=0;restarts=0;startedAt=performance.now();}else restarts++;tasks=pick(l);index=0;answers=[];selected='';choice='';fix='';countErrors=0;submitted=false;show();}function registerMistake(){countErrors++;totalErrors++;if(mode==='student'&&countErrors>=5){start(level,true);const note=document.createElement('p');note.className='notice warn';note.setAttribute('role','status');note.textContent='Pět chyb. Tato hra začíná znovu od začátku.';root.prepend(note);return true;}return false;}
 function show(){if(index>=tasks.length){summary();return;}current=tasks[index];stepEntries={};selected='';choice='';fix='';submitted=false;render();}
 function equation(){
  const parts = [];
@@ -487,7 +487,7 @@ function render(){
    <div class="head">
      <div><div class="tasktype">DETEKTIVNÍ KANCELÁŘ · ${modeName} · ${{easy:'Lehká',medium:'Střední',hard:'Těžká'}[level]}</div>
        <h2>Případ ${index+1} z 15</h2></div>
-     <button id="back" class="soft">← Výběr obtížnosti</button>
+     ${mode==='student'?'':'<button id="back" class="soft">← Výběr obtížnosti</button>'}
    </div>
    <div class="progress"><div class="bar" style="width:${Math.round(index/15*100)}%"></div></div>
    <section class="box assignment equation ${level!=='easy'?'long-equation':''}" aria-label="Příklad a výpočet"><div class="calculation-track">${equation()}</div></section>
@@ -504,9 +504,10 @@ function render(){
    </div>`;
  bindBoardTools();
  fitCaseScreen();
- root.querySelector('#back').onclick=menu;
+ if(root.querySelector('#back'))root.querySelector('#back').onclick=menu;
  root.querySelectorAll('[data-step]').forEach(button=>button.onclick=()=>{
    if(!current.category||button.dataset.step!==String(firstBadIndex(current))){
+     if(registerMistake())return;
      root.querySelector('#selection-feedback').textContent='Zkus jiné místo ve výpočtu.';
      return;
    }
@@ -518,6 +519,7 @@ function render(){
  root.querySelector('#correct').onchange=event=>{
    if(current.category){
      event.target.checked=false;
+     if(registerMistake())return;
      root.querySelector('#selection-feedback').textContent='V postupu je chyba.';
      return;
    }
@@ -526,6 +528,8 @@ function render(){
    root.querySelector(isGood?'#correct':'#submit')?.focus({preventScroll:true});
  };
  root.querySelectorAll('[data-type]').forEach(option=>option.onchange=()=>{
+   if(option.dataset.type!==current.category&&registerMistake())return;
+
    choice=option.dataset.type;
    render();
    root.querySelector(choice===current.category?(repairSteps(current).length?'[data-repair]':'#fix'):'[data-type="'+choice+'"]')?.focus({preventScroll:true});
@@ -584,6 +588,7 @@ function submit(){
  const repaired=current.category?repairSteps(current):[];
  const wrongStep=repaired.findIndex((step,i)=>!repairMatches(step,i));
  if(wrongStep!==-1){
+   if(registerMistake())return;
    root.querySelector('#repair-feedback-'+wrongStep).textContent='Zkontroluj čitatele a jmenovatele v kroku '+(firstBadIndex(current)+wrongStep)+'.';
    root.querySelector('[data-repair="'+wrongStep+'-0-top"]').focus();
    return;
@@ -591,6 +596,7 @@ function submit(){
  const exactFinal=!repaired.length||!current.correction.startsWith('[[')||
    fix.split(/([ /])/).map(value=>/^\d+$/.test(value)?String(BigInt(value)):value).join('')===current.correction.slice(2,-2).replace(';',' ');
  if(current.category&&(!correctResult(current,fix)||!exactFinal)){
+   if(registerMistake())return;
    const input=root.querySelector('#fix');
    input.setAttribute('aria-invalid','true');
    root.querySelector('#fix-denominator')?.setAttribute('aria-invalid','true');
@@ -602,12 +608,12 @@ function submit(){
  const correct=true;
  const data={id:current.id,steps:current.steps,instruction:current.instruction,targetUnit:current.targetUnit,located,typed,choice,selected,fix,repaired,category:current.category,correction:current.correction,explanation:current.explanation,correct};
  answers.push(data);
- if(!correct)countErrors++;
+
  const fb=root.querySelector('#feedback');
  fb.innerHTML=(mode==='test'?'<div class="notice">Odpověď uložena. Vyhodnocení se zobrazí po dokončení všech 15 případů.</div>':'<div class="notice '+(correct?'':'warn')+'"><b>'+(correct?'Místo a typ jsou správně.':'Tvoje označení není úplně správně.')+'</b><p>'+(current.category?'První chybný krok je číslo '+(firstBadIndex(current))+'. Typ: '+labels[current.category]+'.':'Celý postup je správný.')+'</p><p>'+current.explanation+'</p>'+(current.category?'<p>Správný výsledek: <b>'+math(current.correction)+'</b></p>':'')+'<p class="minor">Svůj výsledek můžeš porovnat se vzorem.</p></div>');
  const next=document.createElement('button');next.className='primary';next.textContent=index===14?'Zobrazit vyhodnocení':'Další případ →';next.onclick=()=>{index++;show()};fb.append(next);
  root.querySelectorAll('.step,[data-type],[data-repair],#correct,#fix,#fix-denominator,#fix-whole,#submit').forEach(x=>x.disabled=true);
- if(mode==='student'&&countErrors>=5){const note=document.createElement('p');note.className='notice warn';note.textContent='Pět nesprávně označených případů. Podle pravidel režimu ŽÁK můžeš začít nové kolo.';fb.append(note);}
+
 }
 function firstBadIndex(t){
  // V generovaných chybných případech je první chybný člen druhý, s výjimkou jednotek,
@@ -616,12 +622,15 @@ function firstBadIndex(t){
 }
 function summary(){
  const scored=answers.filter(a=>a.correct).length;
- root.innerHTML='<div class="box"><div class="tasktype">DETEKTIVNÍ KANCELÁŘ · '+modeName+'</div><h1>Vyšetřování dokončeno</h1><div class="score">'+scored+' / 15</div><p>Zkontrolováno bylo místo a druh chyby i opravený výsledek.</p><div class="controls"><button class="primary" id="again">Nová sada 15 případů</button><button class="soft" id="levels">Změnit obtížnost</button><button class="soft" id="print">Vytisknout přehled</button></div><h2>Protokol případů</h2>'+answers.map((a,i)=>'<div class="summary"><b>'+(i+1)+'. '+(a.correct?'✓':'✗')+' '+(a.category?labels[a.category]:'Bez chyby')+'</b><p>'+a.instruction+' <span class="math">'+assignmentMath(a)+'</span></p><p class="small">Postup <span class="math">'+math(a.steps[0])+a.steps.slice(1).map((value,i)=>value===a.steps[i]?'':' = '+math(value)).join('')+'</span></p>'+(a.repaired.length?'<p><b>Opravené kroky</b> '+a.repaired.map(math).join(' = ')+'</p>':'')+(a.fix?'<p><b>Výsledek žáka:</b> '+escapeHTML(a.fix)+'</p>':'')+'<p><b>Vzor:</b> '+a.explanation+(a.category?' Správně: '+math(a.correction):'')+'</p></div>').join('')+'</div>';
+ const seconds=Math.max(1,Math.round((performance.now()-(startedAt||performance.now()))/1000));
+ const duration=Math.floor(seconds/60)+' min '+seconds%60+' s';
+ const buttons='<button class="primary" id="again">'+(mode==='student'?'Hrát stejnou hru znovu':'Nová sada 15 případů')+'</button>'+(mode==='student'?'':'<button class="soft" id="levels">Změnit obtížnost</button><button class="soft" id="print">Vytisknout přehled</button>');
+ root.innerHTML='<div class="box"><div class="tasktype">DETEKTIVNÍ KANCELÁŘ · '+modeName+'</div><h1>Vyšetřování dokončeno</h1><div class="score">'+scored+' / 15</div><p class="notice"><b>Hra:</b> Detektivní kancelář · <b>Chyby:</b> '+totalErrors+' · <b>Opakování od začátku:</b> '+restarts+' · <b>Čas:</b> '+duration+'</p><p>Zkontrolováno bylo místo a druh chyby i opravený výsledek. Výsledek oznam učiteli.</p><div class="controls">'+buttons+'</div><h2>Protokol případů</h2>'+answers.map((a,i)=>'<div class="summary"><b>'+(i+1)+'. '+(a.correct?'✓':'✗')+' '+(a.category?labels[a.category]:'Bez chyby')+'</b><p>'+a.instruction+' <span class="math">'+assignmentMath(a)+'</span></p><p class="small">Postup <span class="math">'+math(a.steps[0])+a.steps.slice(1).map((value,i)=>value===a.steps[i]?'':' = '+math(value)).join('')+'</span></p>'+(a.repaired.length?'<p><b>Opravené kroky</b> '+a.repaired.map(math).join(' = ')+'</p>':'')+(a.fix?'<p><b>Výsledek žáka:</b> '+escapeHTML(a.fix)+'</p>':'')+'<p><b>Vzor:</b> '+a.explanation+(a.category?' Správně: '+math(a.correction):'')+'</p></div>').join('')+'</div>';
  root.querySelector('#again').onclick=()=>start(level);
- root.querySelector('#levels').onclick=menu;
- root.querySelector('#print').onclick=()=>window.print();
- try{localStorage.setItem('zlomkov-detektiv-posledni',JSON.stringify({date:new Date().toISOString(),level,mode,answers}));}catch(e){}
+ if(root.querySelector('#levels'))root.querySelector('#levels').onclick=menu;
+ if(root.querySelector('#print'))root.querySelector('#print').onclick=()=>window.print();
+ try{localStorage.setItem('zlomkov-detektiv-posledni',JSON.stringify({date:new Date().toISOString(),level,mode,errors:totalErrors,restarts,duration,answers}));}catch(e){}
 }
 function escapeHTML(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-menu();
+if(['easy','medium','hard'].includes(params.get('level')))start(params.get('level'));else menu();
 </script></body></html>
