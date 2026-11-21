@@ -53,7 +53,7 @@
  .case-screen #feedback .notice{flex:1;margin:0;padding:6px 9px;line-height:1.25}
  .case-screen #feedback .notice p{margin:2px 0}
 }
-</style></head><body><main class="layout" id="root"></main><script>
+</style><style>.case-screen.mobile-repair .assignment,.case-screen.mobile-repair .check,.case-screen.mobile-repair #selection-feedback,.case-screen.mobile-repair .error-types,.case-screen.mobile-repair .board-tools{display:none!important}.original-assignment{margin:8px 0!important;padding:12px!important;background:#fff8e5;border-color:#d7bd7c}.original-assignment h3{margin:0 0 8px;font-size:14px;color:#63776e}.original-expression{font-size:clamp(1.45rem,5vw,2.25rem);font-weight:750;line-height:1.4;overflow-wrap:anywhere}.original-expression .math{flex-wrap:wrap;white-space:normal}.case-screen.mobile-repair .answer-fields{margin-top:8px!important;padding:12px!important}.case-screen.mobile-repair .answer-fields .field{margin:0 0 6px!important}.case-screen.mobile-repair .repair-row{margin:0;padding:4px 0}</style></head><body><main class="layout" id="root"></main><script>
 'use strict';
 const root=document.querySelector('#root');
 const params=new URLSearchParams(location.search);
@@ -482,14 +482,16 @@ function render(){
  const isGood = selected==='correct';
  const hasError = current.category && selected===String(firstBadIndex(current));
  const mayCorrect = hasError && choice===current.category;
+ const mobileRepair=Boolean(mayCorrect&&window.matchMedia('(max-width: 800px)').matches);
  root.innerHTML=`
-   <div class="case-screen">
+   <div class="case-screen${mobileRepair?' mobile-repair':''}">
    <div class="head">
      <div><div class="tasktype">DETEKTIVNÍ KANCELÁŘ · ${modeName} · ${{easy:'Lehká',medium:'Střední',hard:'Těžká'}[level]}</div>
        <h2>Případ ${index+1} z 15</h2></div>
      ${mode==='student'?'':'<button id="back" class="soft">← Výběr obtížnosti</button>'}
    </div>
    <div class="progress"><div class="bar" style="width:${Math.round(index/15*100)}%"></div></div>
+   ${mobileRepair?'<section class="box original-assignment" aria-label="Původní zadání"><h3>Původní zadání</h3><div class="original-expression">'+math(current.steps[0])+'</div></section>':''}
    <section class="box assignment equation ${level!=='easy'?'long-equation':''}" aria-label="Příklad a výpočet"><div class="calculation-track">${equation()}</div></section>
    <label class="check"><input id="correct" type="checkbox" ${isGood?'checked':''}><span>Celý postup je správný</span></label>
    <p class="minor" id="selection-feedback" role="status"></p>
@@ -634,3 +636,4 @@ function summary(){
 function escapeHTML(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 if(['easy','medium','hard'].includes(params.get('level')))start(params.get('level'));else menu();
 </script></body></html>
+
